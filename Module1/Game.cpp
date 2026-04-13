@@ -227,7 +227,7 @@ void Game::render(
     int windowWidth,
     int windowHeight)
 {
-    renderUI();
+    renderUI(time);
 
     matrices.windowSize = glm::ivec2(windowWidth, windowHeight);
 
@@ -329,7 +329,7 @@ void Game::render(
     shapeRenderer->post_render();
 }
 
-void Game::renderUI()
+void Game::renderUI(float time)
 {
     // Begin game info ImGui window
     ImGui::Begin("Game Info");
@@ -386,6 +386,33 @@ void Game::renderUI()
     ImGui::Text("Walking (2) + Waving (3)");
     ImGui::Text("Branch root: mixamorig:Spine");
     ImGui::Checkbox("Spine subtree uses waving", &rightCharacterSubtreeUsesWave);
+
+    //time
+    ImGui::Separator();
+    ImGui::Text("Current In-Game Time: %.2f", time);
+
+    //speed for player
+    ImGui::Separator();
+    for (entt::entity entity : entity_registry->view<PlayerControllerComponent>())
+    {
+        auto& controller = entity_registry->get<PlayerControllerComponent>(entity);
+
+        ImGui::SliderFloat("Player speed: ", &controller.speed, 0.0f, 100.0f);
+    }
+
+    //speed and points for all NPC entities
+    ImGui::Separator();
+    for (entt::entity entity : entity_registry->view<NPCControllerComponent>())
+    {
+        auto& controller = entity_registry->get<NPCControllerComponent>(entity);
+        ImGui::SliderFloat("NPC speed", &controller.speed, 0.0f, 200.0f);
+        for (int i = 0; i < controller.points.size(); i++)
+        {
+            glm::vec3& point = controller.points[i];
+            ImGui::SliderFloat3(("NPC Point: " + std::to_string(i)).c_str(), glm::value_ptr(point), -10.0f, 10.0f);
+        }
+    }
+
 
     ImGui::End(); // end info window
 
