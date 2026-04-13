@@ -26,7 +26,7 @@ public:
      *
      * @return true if initialization is successful, false otherwise.
      */
-    virtual bool init() = 0;
+    virtual bool init(InputManagerPtr input) = 0;
 
     /**
      * @brief Update the game state.

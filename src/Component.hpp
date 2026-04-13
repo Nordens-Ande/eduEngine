@@ -5,83 +5,102 @@
 
 #include <entt/entt.hpp>
 #include "glmcommon.hpp"
+#include "ForwardRenderer.hpp"
 #include "RenderableMesh.hpp"
-//#include 
+#include "InputManager.hpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
 
 struct TransformComponent
 {
-	glm::vec3 position;
-	glm::vec3 scale;
-	glm::vec3 rotation;
+	//glm::vec3 position;
+	//glm::vec3 scale;
+	//glm::vec3 rotation;
+	glm::mat4 transform;
 };
 
 struct LinearVelocityComponent
 {
+	//float maxSpeed;
 	glm::vec3 velocity;
 };
 
 struct MeshComponent
 {
-	glm::vec3 velocity;
+	eeng::ForwardRendererPtr forwardRenderer;
+	std::shared_ptr<eeng::RenderableMesh> mesh;
 };
 
 struct PlayerControllerComponent
 {
-	std::weak_ptr<eeng::RenderableMesh> mesh;
+	float speed;
+	InputManagerPtr inputManager;
 };
 
-struct NPCController
+struct NPCControllerComponent
 {
-
+	float speed;
+	int pointIndex = 0;
+	std::vector<glm::vec3> points;
 };
 
-struct PointLightComponent
+struct PointLightComponent // Optional
 {
-
+	//TODO
 };
 
-struct CameraComponent
+struct CameraComponent // Optional
 {
-
+	//TODO
 };
 
 
-
-class ComponentSystem
+//Abstract classes (try to make something similar to C#s interfaces)
+class UpdateableSystem
 {
 public:
 	virtual void Update(entt::registry& registry, float dt) = 0;
 };
-
-class MovementSystem : ComponentSystem
+class RenderableSystem
 {
+public:
+	virtual void Render(entt::registry& registry) = 0;
+};
+
+//Systems:
+class MovementSystem : public UpdateableSystem
+{
+public:
 	void Update(entt::registry& registry, float dt) override;
 };
 
-class PlayerController : ComponentSystem
+class PlayerControllerSystem : public UpdateableSystem
 {
+public:
 	void Update(entt::registry& registry, float dt) override;
 };
 
-class RenderSystem : ComponentSystem
+class RenderSystem : public RenderableSystem
 {
+public:
+	void Render(entt::registry& registry) override;
+};
+
+class NPCControllerSystem : public UpdateableSystem
+{
+public:
 	void Update(entt::registry& registry, float dt) override;
 };
 
-class NPCControllerSystem : ComponentSystem
+class PointLightSystem : public UpdateableSystem
 {
+public:
 	void Update(entt::registry& registry, float dt) override;
 };
 
-class PointLightSystem : ComponentSystem
+class CameraSystem : public UpdateableSystem
 {
-	void Update(entt::registry& registry, float dt) override;
-};
-
-class CameraSystem : ComponentSystem
-{
+public:
 	void Update(entt::registry& registry, float dt) override;
 };

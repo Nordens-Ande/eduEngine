@@ -82,7 +82,7 @@ namespace eeng {
 
     void Engine::run(std::unique_ptr<GameBase> game)
     {
-        game->init();
+        game->init(input);
 
         bool running = true;
         float time_s = 0.0f, time_ms, deltaTime_s = 0.016f;

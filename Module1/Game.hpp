@@ -7,6 +7,7 @@
 #include "RenderableMesh.hpp"
 #include "ForwardRenderer.hpp"
 #include "ShapeRenderer.hpp"
+#include "Component.hpp"
 
 /// @brief A Game may hold, update and render 3D geometry and GUI elements
 class Game : public eeng::GameBase
@@ -14,7 +15,7 @@ class Game : public eeng::GameBase
 public:
     /// @brief For game resource initialization
     /// @return 
-    bool init() override;
+    bool init(InputManagerPtr input) override;
 
     /// @brief General update method that is called each frame
     /// @param time Total time elapsed in seconds
@@ -86,15 +87,34 @@ private:
     } pointlight;
 
     // (Placeholder) Player data
-    struct Player
-    {
-        glm::vec3 pos = glm_aux::vec3_000;
-        float velocity{ 6.0f };
+    //struct Player
+    //{
+    //    glm::vec3 pos = glm_aux::vec3_000;
+    //    float velocity{ 6.0f };
 
-        // Local vectors & view ray (computed when camera/player is updated)
-        glm::vec3 fwd, right;
-        glm_aux::Ray viewRay;
-    } player;
+    //    // Local vectors & view ray (computed when camera/player is updated)
+    //    glm::vec3 fwd, right;
+    //    glm_aux::Ray viewRay;
+    //} player;
+
+    // Entity data
+
+    // Entity Systems
+    MovementSystem movementSystem;
+    PlayerControllerSystem playerControllerSystem;
+    NPCControllerSystem npcControllerSystem;
+    std::vector<UpdateableSystem*> updateableSystems {
+        &movementSystem,
+        &playerControllerSystem,
+        &npcControllerSystem
+    };
+
+    RenderSystem renderSystem;
+    std::vector<RenderableSystem*> renderableSystems{
+        &renderSystem
+    };
+
+    //TransformComponent characterWorldTransform;
 
     // Game meshes
     std::shared_ptr<eeng::RenderableMesh> grassMesh, horseMesh, characterMesh;

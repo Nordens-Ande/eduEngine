@@ -5,7 +5,7 @@
 #include "Log.hpp"
 #include "Game.hpp"
 
-bool Game::init()
+bool Game::init(InputManagerPtr input)
 {
     forwardRenderer = std::make_shared<eeng::ForwardRenderer>();
     forwardRenderer->init("shaders/phong_vert.glsl", "shaders/phong_frag.glsl");
@@ -21,6 +21,13 @@ bool Game::init()
         float x, y, z;
     };
     entity_registry->emplace<Tfm>(ent1, Tfm{});
+
+
+    //entity_registry->emplace<PlayerControllerComponent>
+    //(
+    //    entityPlayer,
+    //    PlayerControllerComponent { std::shared_ptr<eeng::InputManager::InputManager()>()}
+    //);
 
     // Grass
     grassMesh = std::make_shared<eeng::RenderableMesh>();
@@ -79,6 +86,83 @@ bool Game::init()
         35.0f, { 0, 1, 0 },
         { 0.01f, 0.01f, 0.01f });
 
+    //entity component & systems stuff
+
+    //PLAYER ENTITY
+    auto entityPlayer = entity_registry->create();
+    //characterWorldTransform = TransformComponent{ glm_aux::TRS({ 0, 0, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) };
+    entity_registry->emplace<TransformComponent>
+    (
+        entityPlayer,
+        TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) }
+    );
+    entity_registry->emplace<LinearVelocityComponent>
+    (
+        entityPlayer,
+        LinearVelocityComponent
+        {
+            glm::vec3(1.0f, 0, 0)
+        }
+    );
+    entity_registry->emplace<MeshComponent>
+    (
+        entityPlayer,
+        MeshComponent
+        {
+            forwardRenderer,
+            characterMesh
+        }
+    );
+    entity_registry->emplace<PlayerControllerComponent>
+    (
+        entityPlayer,
+        PlayerControllerComponent
+        {
+            35.0f,
+            input
+        }
+    );
+
+    //NPC (HORSE) ENTITY
+    auto entityHorse = entity_registry->create();
+    entity_registry->emplace<TransformComponent>
+    (
+        entityHorse,
+        TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.01f, 0.01f, 0.01f}) }
+    );
+    entity_registry->emplace<LinearVelocityComponent>
+    (
+        entityHorse,
+        LinearVelocityComponent
+        {
+            glm::vec3(1.0f, 0, 0)
+        }
+    );
+    entity_registry->emplace<MeshComponent>
+    (
+        entityHorse,
+        MeshComponent
+        {
+            forwardRenderer,
+            horseMesh
+        }
+    );
+    entity_registry->emplace<NPCControllerComponent>
+    (
+        entityHorse,
+        NPCControllerComponent
+        {
+            80.0f,
+            0,
+            std::vector<glm::vec3> {
+                { 0, 0, 0 },
+                { 10, 0, 0 },
+                { 10, 0, 10 },
+                { 0, 0, 10 }
+            }
+        }
+    );
+
     return true;
 }
 
@@ -89,16 +173,20 @@ void Game::update(
 {
     updateCamera(input);
 
-    updatePlayer(deltaTime, input);
+    //updatePlayer(deltaTime, input);
+    for (auto system : updateableSystems) //iterates through all systems and updates them
+    {
+        system->Update(*entity_registry, deltaTime);
+    }
 
     pointlight.pos = glm::vec3(
         glm_aux::R(time * 0.1f, { 0.0f, 1.0f, 0.0f }) *
         glm::vec4(100.0f, 100.0f, 100.0f, 1.0f));
 
-    characterWorldMatrix1 = glm_aux::TRS(
-        player.pos,
-        0.0f, { 0, 1, 0 },
-        { 0.03f, 0.03f, 0.03f });
+    //characterWorldMatrix1 = glm_aux::TRS(
+    //    player.pos,
+    //    0.0f, { 0, 1, 0 },
+    //    { 0.03f, 0.03f, 0.03f });
 
     characterWorldMatrix2 = glm_aux::TRS(
         { -3, 0, 0 },
@@ -112,9 +200,9 @@ void Game::update(
 
     // Intersect player view ray with AABBs of other objects 
     // Intersection results are stored in the ray's point_of_contact and can be used for picking, shooting, etc.
-    glm_aux::intersect_ray_AABB(player.viewRay, character_aabb2.min, character_aabb2.max);
-    glm_aux::intersect_ray_AABB(player.viewRay, character_aabb3.min, character_aabb3.max);
-    glm_aux::intersect_ray_AABB(player.viewRay, horse_aabb.min, horse_aabb.max);
+    //glm_aux::intersect_ray_AABB(player.viewRay, character_aabb2.min, character_aabb2.max);
+    //glm_aux::intersect_ray_AABB(player.viewRay, character_aabb3.min, character_aabb3.max);
+    //glm_aux::intersect_ray_AABB(player.viewRay, horse_aabb.min, horse_aabb.max);
 
     // We can also compute a ray from the current mouse position picking etc
     // Let's try it: if the left mouse button is pressed, 
@@ -158,14 +246,20 @@ void Game::render(
     grass_aabb = grassMesh->m_model_aabb.post_transform(grassWorldMatrix);
 
     // Horse
-    horseMesh->animate(3, time);
-    forwardRenderer->renderMesh(horseMesh, horseWorldMatrix);
-    horse_aabb = horseMesh->m_model_aabb.post_transform(horseWorldMatrix);
+    //horseMesh->animate(3, time);
+    //forwardRenderer->renderMesh(horseMesh, horseWorldMatrix);
+    //horse_aabb = horseMesh->m_model_aabb.post_transform(horseWorldMatrix);
 
     // Character, instance 1 (middle, moving) - single clip demo
-    characterMesh->animate(middleCharacterAnimIndex, time * characterAnimSpeed);
-    forwardRenderer->renderMesh(characterMesh, characterWorldMatrix1);
-    character_aabb1 = characterMesh->m_model_aabb.post_transform(characterWorldMatrix1);
+    //characterMesh->animate(middleCharacterAnimIndex, time * characterAnimSpeed);
+    //forwardRenderer->renderMesh(characterMesh, characterWorldTransform.transform);
+    //character_aabb1 = characterMesh->m_model_aabb.post_transform(characterWorldTransform.transform);
+
+    for (auto system : renderableSystems) //goes through all renderableSystems and updates them
+    {
+        system->Render(*entity_registry);
+    }
+    //renderSystem.Update(*entity_registry, 0.0f);
 
     // Character, instance 2 (left) - two-clip full-body blend
     // Explanation: Both 'idle' and 'walk' clips are applied to the entire skeleton with a blend factor.
@@ -189,17 +283,17 @@ void Game::render(
 
     // Debug draw player view ray
     // Green line if the ray hits an object, white line if it doesn't.
-    if (player.viewRay)
-    {
-        shapeRenderer->push_states(ShapeRendering::Color4u{ 0xff00ff00 });
-        shapeRenderer->push_line(player.viewRay.origin, player.viewRay.point_of_contact());
-    }
-    else
-    {
-        shapeRenderer->push_states(ShapeRendering::Color4u{ 0xffffffff });
-        shapeRenderer->push_line(player.viewRay.origin, player.viewRay.origin + player.viewRay.dir * 100.0f);
-    }
-    shapeRenderer->pop_states<ShapeRendering::Color4u>();
+    //if (player.viewRay)
+    //{
+    //    shapeRenderer->push_states(ShapeRendering::Color4u{ 0xff00ff00 });
+    //    shapeRenderer->push_line(player.viewRay.origin, player.viewRay.point_of_contact());
+    //}
+    //else
+    //{
+    //    shapeRenderer->push_states(ShapeRendering::Color4u{ 0xffffffff });
+    //    shapeRenderer->push_line(player.viewRay.origin, player.viewRay.origin + player.viewRay.dir * 100.0f);
+    //}
+    //shapeRenderer->pop_states<ShapeRendering::Color4u>();
 
     // Debug draw object bases
     {
@@ -356,28 +450,31 @@ void Game::updatePlayer(
     float deltaTime,
     InputManagerPtr input)
 {
-    // Fetch keys relevant for player movement
-    using Key = eeng::InputManager::Key;
-    bool W = input->IsKeyPressed(Key::W);
-    bool A = input->IsKeyPressed(Key::A);
-    bool S = input->IsKeyPressed(Key::S);
-    bool D = input->IsKeyPressed(Key::D);
+    //// Fetch keys relevant for player movement
+    //using Key = eeng::InputManager::Key;
+    //bool W = input->IsKeyPressed(Key::W);
+    //bool A = input->IsKeyPressed(Key::A);
+    //bool S = input->IsKeyPressed(Key::S);
+    //bool D = input->IsKeyPressed(Key::D);
 
-    // Compute vectors in the local space of the player
-    player.fwd = glm::vec3(glm_aux::R(camera.yaw, glm_aux::vec3_010) * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-    player.right = glm::cross(player.fwd, glm_aux::vec3_010);
+    //// Compute vectors in the local space of the player
+    //player.fwd = glm::vec3(glm_aux::R(camera.yaw, glm_aux::vec3_010) * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+    //player.right = glm::cross(player.fwd, glm_aux::vec3_010);
 
-    // Compute the total movement as a 3D vector
-    auto movement =
-        player.fwd * player.velocity * deltaTime * ((W ? 1.0f : 0.0f) + (S ? -1.0f : 0.0f)) +
-        player.right * player.velocity * deltaTime * ((A ? -1.0f : 0.0f) + (D ? 1.0f : 0.0f));
+    //// Compute the total movement as a 3D vector
+    //auto movement =
+    //    player.fwd * player.velocity * deltaTime * ((W ? 1.0f : 0.0f) + (S ? -1.0f : 0.0f)) +
+    //    player.right * player.velocity * deltaTime * ((A ? -1.0f : 0.0f) + (D ? 1.0f : 0.0f));
 
-    // Update player position and forward view ray
-    player.pos += movement;
-    player.viewRay = glm_aux::Ray{ player.pos + glm::vec3(0.0f, 2.0f, 0.0f), player.fwd };
+    //// Update player position and forward view ray
+    //player.pos += movement;
+    //player.viewRay = glm_aux::Ray{ player.pos + glm::vec3(0.0f, 2.0f, 0.0f), player.fwd };
 
-    // Update camera to track the player
-    camera.lookAt += movement;
-    camera.pos += movement;
+    //// Update camera to track the player
+    //camera.lookAt += movement;
+    //camera.pos += movement;
+
+    //movementSystem.Update(*entity_registry, deltaTime);
+    //controllerSystem.Update(*entity_registry, deltaTime);
 
 }
