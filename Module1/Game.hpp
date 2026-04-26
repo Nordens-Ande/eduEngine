@@ -106,12 +106,14 @@ private:
     std::vector<UpdateableSystem*> updateableSystems {
         &movementSystem,
         &playerControllerSystem,
-        &npcControllerSystem
+        &npcControllerSystem,
     };
 
     RenderSystem renderSystem;
+    SkeletonGizmoSystem skeletonGizmoSystem;
     std::vector<RenderableSystem*> renderableSystems{
-        &renderSystem
+        &renderSystem,
+        &skeletonGizmoSystem
     };
 
     //TransformComponent characterWorldTransform;

@@ -6,8 +6,10 @@
 #include <entt/entt.hpp>
 #include "glmcommon.hpp"
 #include "ForwardRenderer.hpp"
+#include "ShapeRenderer.hpp"
 #include "RenderableMesh.hpp"
 #include "InputManager.hpp"
+#include "Game.hpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -51,8 +53,37 @@ struct PointLightComponent // Optional
 };
 
 struct CameraComponent // Optional
+{ //fetched from Game.hpp camera struct:
+	glm::vec3 lookAt = glm_aux::vec3_000;   // Point of interest
+	glm::vec3 up = glm_aux::vec3_010;       // Local up-vector
+	float distance = 15.0f;                 // Distance to point-of-interest
+	float sensitivity = 0.005f;             // Mouse sensitivity
+	const float nearPlane = 1.0f;           // Rendering near plane
+	const float farPlane = 500.0f;          // Rendering far plane
+
+	// Position and view angles (computed when camera is updated)
+	float yaw = 0.0f;                       // Horizontal angle (radians)
+	float pitch = -glm::pi<float>() / 8;    // Vertical angle (radians)
+	glm::vec3 pos;                          // Camera position
+
+	// Previous mouse position
+	glm::ivec2 mouse_xy_prev{ -1, -1 };
+};
+
+struct GizmoComponent
 {
-	//TODO
+	ShapeRendererPtr shapeRenderer;
+	std::shared_ptr<eeng::RenderableMesh> mesh;
+	bool isEnabled = true;
+};
+
+struct AnimationComponent
+{
+	std::string primaryAnimations;
+	std::string secondaryAnimations;
+	float blendFactor;
+	bool useLayering;
+	float time;
 };
 
 
@@ -99,7 +130,18 @@ public:
 	void Update(entt::registry& registry, float dt) override;
 };
 
-class CameraSystem : public UpdateableSystem
+class TPCameraSystem : public UpdateableSystem
+{
+public:
+	void Update(entt::registry& registry, float dt) override;
+};
+
+class SkeletonGizmoSystem : public RenderableSystem
+{
+	void Render(entt::registry& registry) override;
+};
+
+class AnimationSystem : public UpdateableSystem
 {
 public:
 	void Update(entt::registry& registry, float dt) override;

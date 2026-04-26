@@ -1,10 +1,11 @@
 #include<Component.hpp>
 #include <entt/entt.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include "glmcommon.hpp"
 
 void MovementSystem::Update(entt::registry& registry, float dt)
 {
-    for (auto entity : registry.view<TransformComponent, LinearVelocityComponent>())
+    for (entt::entity entity : registry.view<TransformComponent, LinearVelocityComponent>())
     {
         auto& transform = registry.get<TransformComponent>(entity);
         auto& velocity = registry.get<LinearVelocityComponent>(entity);
@@ -79,3 +80,51 @@ void NPCControllerSystem::Update(entt::registry& registry, float dt)
         }
     }
 }
+
+void TPCameraSystem::Update(entt::registry& registry, float dt)
+{
+    for (entt::entity entity : registry.view<TransformComponent, CameraComponent>())
+    {
+        auto& transform = registry.get<TransformComponent>(entity);
+        auto& camera = registry.get<CameraComponent>(entity);
+    }
+}
+
+void SkeletonGizmoSystem::Render(entt::registry& registry)
+{
+    for (entt::entity entity : registry.view<TransformComponent, MeshComponent, GizmoComponent>())
+    {
+        auto& transform = registry.get<TransformComponent>(entity);
+        auto& mesh = registry.get<MeshComponent>(entity);
+        auto& gizmo = registry.get<GizmoComponent>(entity);
+
+        if (!gizmo.isEnabled) continue;
+
+        std::shared_ptr<eeng::RenderableMesh> characterMesh = mesh.mesh;
+        ShapeRendererPtr shapeRenderer = gizmo.shapeRenderer;
+        float axisLen = 25.0f;
+
+        for (int i = 0; i < characterMesh->boneMatrices.size(); ++i) {
+            auto IBinverse = glm::inverse(characterMesh->m_bones[i].inversebind_tfm);
+            glm::mat4 global = transform.transform * characterMesh->boneMatrices[i] * IBinverse;
+            glm::vec3 pos = glm::vec3(global[3]);
+
+            glm::vec3 right = glm::vec3(global[0]); // X
+            glm::vec3 up = glm::vec3(global[1]); // Y
+            glm::vec3 fwd = glm::vec3(global[2]); // Z
+
+            shapeRenderer->push_states(ShapeRendering::Color4u::Red);
+            shapeRenderer->push_line(pos, pos + axisLen * right);
+
+            shapeRenderer->push_states(ShapeRendering::Color4u::Green);
+            shapeRenderer->push_line(pos, pos + axisLen * up);
+
+            shapeRenderer->push_states(ShapeRendering::Color4u::Blue);
+            shapeRenderer->push_line(pos, pos + axisLen * fwd);
+
+            shapeRenderer->pop_states<ShapeRendering::Color4u>();
+            shapeRenderer->pop_states<ShapeRendering::Color4u>();
+            shapeRenderer->pop_states<ShapeRendering::Color4u>();
+        }
+    }
+};

@@ -122,6 +122,14 @@ bool Game::init(InputManagerPtr input)
             input
         }
     );
+    entity_registry->emplace<GizmoComponent>
+    (
+        entityPlayer,
+        GizmoComponent
+        {
+            shapeRenderer
+        }
+    );
 
     //NPC (HORSE) ENTITY
     auto entityHorse = entity_registry->create();
