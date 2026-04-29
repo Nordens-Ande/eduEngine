@@ -103,12 +103,14 @@ private:
     MovementSystem movementSystem;
     PlayerControllerSystem playerControllerSystem;
     NPCControllerSystem npcControllerSystem;
+    AnimationSystem animationSystem;
     std::vector<UpdateableSystem*> updateableSystems {
         &movementSystem,
         &playerControllerSystem,
         &npcControllerSystem,
+        &animationSystem,
     };
-
+    
     RenderSystem renderSystem;
     SkeletonGizmoSystem skeletonGizmoSystem;
     std::vector<RenderableSystem*> renderableSystems{

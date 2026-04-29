@@ -9,7 +9,7 @@
 #include "ShapeRenderer.hpp"
 #include "RenderableMesh.hpp"
 #include "InputManager.hpp"
-#include "Game.hpp"
+//#include "Game.cpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -79,11 +79,12 @@ struct GizmoComponent
 
 struct AnimationComponent
 {
-	std::string primaryAnimations;
-	std::string secondaryAnimations;
+	int primaryAnimation;
+	int secondaryAnimation;
 	float blendFactor;
 	bool useLayering;
-	float time;
+	eeng::AnimationBranchDesc filter;
+	float time = 0;
 };
 
 

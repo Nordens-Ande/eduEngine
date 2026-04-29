@@ -130,6 +130,23 @@ bool Game::init(InputManagerPtr input)
             shapeRenderer
         }
     );
+    eeng::AnimationBranchDesc upperBodyFilter;
+    upperBodyFilter.root_node_name = "mixamorig:Spine";
+    upperBodyFilter.mode = rightCharacterSubtreeUsesWave
+        ? eeng::AnimationBranchDesc::Mode::IncludeSubtree
+        : eeng::AnimationBranchDesc::Mode::ExcludeSubtree;
+    entity_registry->emplace<AnimationComponent>
+    (
+        entityPlayer,
+        AnimationComponent
+        {
+            1, 
+            2, 
+            0.5f, 
+            false, 
+            upperBodyFilter
+        }
+    );
 
     //NPC (HORSE) ENTITY
     auto entityHorse = entity_registry->create();
@@ -408,6 +425,22 @@ void Game::renderUI(float time)
         ImGui::SliderFloat("Player speed: ", &controller.speed, 0.0f, 100.0f);
     }
 
+    //animationComponent:
+    ImGui::Separator();
+    for (entt::entity entity : entity_registry->view<AnimationComponent>())
+    {
+        auto& animation = entity_registry->get<AnimationComponent>(entity);
+        ImGui::InputInt("Primary Animation Index", &animation.primaryAnimation, 0, 3);
+        ImGui::InputInt("Secondary Animation Index", &animation.secondaryAnimation, 0, 3);
+        ImGui::SliderFloat("Blend factor: ", &animation.blendFactor, 0.0f, 1.0f);
+        ImGui::Checkbox("Use Layering", &animation.useLayering);
+    }
+    for (entt::entity entity : entity_registry->view<GizmoComponent>())
+    {
+        auto& gizmo = entity_registry->get<GizmoComponent>(entity);
+        ImGui::Checkbox("Gizmo Visibility", &gizmo.isEnabled);
+    }
+
     //speed and points for all NPC entities
     ImGui::Separator();
     for (entt::entity entity : entity_registry->view<NPCControllerComponent>())
@@ -420,7 +453,6 @@ void Game::renderUI(float time)
             ImGui::SliderFloat3(("NPC Point: " + std::to_string(i)).c_str(), glm::value_ptr(point), -10.0f, 10.0f);
         }
     }
-
 
     ImGui::End(); // end info window
 

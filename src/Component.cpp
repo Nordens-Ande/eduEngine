@@ -37,12 +37,18 @@ void RenderSystem::Render(entt::registry& registry)
 {
     for (entt::entity entity : registry.view<TransformComponent, MeshComponent>())
     {
-        auto& transfrom = registry.get<TransformComponent>(entity);
+        auto& transform = registry.get<TransformComponent>(entity);
         auto& mesh = registry.get<MeshComponent>(entity);
 
         //renderableMesh->
-        //mesh.mesh->animate(middleCharacterAnimIndex, time * characterAnimSpeed);
-        mesh.forwardRenderer->renderMesh(mesh.mesh, transfrom.transform);
+        if (auto* animation = registry.try_get<AnimationComponent>(entity))
+        {
+            if (animation->useLayering)
+                mesh.mesh->animateBlend(animation->primaryAnimation, animation->secondaryAnimation, animation->time, animation->time, animation->filter);
+            else
+                mesh.mesh->animateBlend(animation->primaryAnimation, animation->secondaryAnimation, animation->time, animation->time, animation->blendFactor);
+        }
+        mesh.forwardRenderer->renderMesh(mesh.mesh, transform.transform);
         //character_aabb1 = renderableMesh->m_model_aabb.post_transform(characterWorldTransform.transform);
     }
 }
@@ -128,3 +134,20 @@ void SkeletonGizmoSystem::Render(entt::registry& registry)
         }
     }
 };
+
+void AnimationSystem::Update(entt::registry& registry, float dt)
+{
+    for (entt::entity entity : registry.view<AnimationComponent, LinearVelocityComponent>())
+    {
+        auto& animation = registry.get<AnimationComponent>(entity);
+        auto& velocity = registry.get<LinearVelocityComponent>(entity);
+
+        animation.time += dt;
+        if (!animation.useLayering)
+        {
+            float blend = std::lerp(animation.blendFactor, glm::length(velocity.velocity) > 0.01f ? 1.0f : 0.0f, 0.5f);
+            //animation.blendFactor = glm::length(velocity.velocity) > 0.01f ? 1 : 0;
+            animation.blendFactor = blend;
+        }
+    }
+}
