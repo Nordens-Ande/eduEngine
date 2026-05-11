@@ -1,46 +1,41 @@
-#include<Component.hpp>
-#include <entt/entt.hpp>
+#include "Systems.hpp"
 #include <glm/gtx/matrix_decompose.hpp>
 #include "glmcommon.hpp"
 
-void MovementSystem::Update(entt::registry& registry, float dt)
+namespace ecs
 {
-    for (entt::entity entity : registry.view<TransformComponent, LinearVelocityComponent>())
+    void MovementSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity, 
+        TransformComponent& transform, 
+        LinearVelocityComponent& vel, 
+        float dt)
     {
-        auto& transform = registry.get<TransformComponent>(entity);
-        auto& velocity = registry.get<LinearVelocityComponent>(entity);
-
-        transform.transform = glm::translate(transform.transform, velocity.velocity * dt);
+        transform.transform = glm::translate(transform.transform, vel.velocity * dt);
     }
-}
 
-void PlayerControllerSystem::Update(entt::registry& registry, float dt)
-{
-    for (entt::entity entity : registry.view<PlayerControllerComponent, LinearVelocityComponent>())
+    void PlayerControllerSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        PlayerControllerComponent& controller,
+        LinearVelocityComponent& vel,
+        float dt)
     {
-        auto& controller = registry.get<PlayerControllerComponent>(entity);
-        auto& vel = registry.get<LinearVelocityComponent>(entity);
-
-        glm::vec3 moveDir { 0, 0, 0 };
+        glm::vec3 moveDir{ 0, 0, 0 };
         if (controller.inputManager->IsKeyPressed(eeng::InputManager::Key::W)) moveDir.z += 1.0f;
         if (controller.inputManager->IsKeyPressed(eeng::InputManager::Key::A)) moveDir.x += 1.0f;
         if (controller.inputManager->IsKeyPressed(eeng::InputManager::Key::S)) moveDir.z -= 1.0f;
         if (controller.inputManager->IsKeyPressed(eeng::InputManager::Key::D)) moveDir.x -= 1.0f;
 
-        //std::cout << moveDir.x << std::endl;
-
         vel.velocity = moveDir * controller.speed;
     }
-}
 
-void RenderSystem::Render(entt::registry& registry) 
-{
-    for (entt::entity entity : registry.view<TransformComponent, MeshComponent>())
+    void RenderSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        MeshComponent& mesh)
     {
-        auto& transform = registry.get<TransformComponent>(entity);
-        auto& mesh = registry.get<MeshComponent>(entity);
-
-        //renderableMesh->
         if (auto* animation = registry.try_get<AnimationComponent>(entity))
         {
             if (animation->useLayering)
@@ -48,22 +43,21 @@ void RenderSystem::Render(entt::registry& registry)
             else
                 mesh.mesh->animateBlend(animation->primaryAnimation, animation->secondaryAnimation, animation->time, animation->time, animation->blendFactor);
         }
-        mesh.forwardRenderer->renderMesh(mesh.mesh, transform.transform);
-        //character_aabb1 = renderableMesh->m_model_aabb.post_transform(characterWorldTransform.transform);
-    }
-}
 
-void NPCControllerSystem::Update(entt::registry& registry, float dt)
-{
-    for (entt::entity entity : registry.view<NPCControllerComponent, TransformComponent, LinearVelocityComponent>())
+        mesh.forwardRenderer->renderMesh(mesh.mesh, transform.transform);
+    }
+
+    void NPCControllerSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        NPCControllerComponent& controller,
+        TransformComponent& transform,
+        LinearVelocityComponent& vel,
+        float dt)
     {
-        auto& controller = registry.get<NPCControllerComponent>(entity);
-        auto& transform = registry.get<TransformComponent>(entity);
-        auto& velocity = registry.get<LinearVelocityComponent>(entity);
-    
         //skips if there is no points present
         if (controller.points.size() == 0)
-            continue;
+            return;
 
         //decompose translate from entitys transform
         glm::vec3 scale;
@@ -82,29 +76,28 @@ void NPCControllerSystem::Update(entt::registry& registry, float dt)
         }
         else //else move to the current point
         {
-            velocity.velocity = glm::normalize(relative) * controller.speed;
+            vel.velocity = glm::normalize(relative) * controller.speed;
         }
     }
-}
 
-void TPCameraSystem::Update(entt::registry& registry, float dt)
-{
-    for (entt::entity entity : registry.view<TransformComponent, CameraComponent>())
+    //void TPCameraSystem::Update(entt::registry& registry, float dt)
+    //{
+    //    for (entt::entity entity : registry.view<TransformComponent, CameraComponent>())
+    //    {
+    //        auto& transform = registry.get<TransformComponent>(entity);
+    //        auto& camera = registry.get<CameraComponent>(entity);
+    //    }
+    //}
+
+    void SkeletonGizmoSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        MeshComponent& mesh,
+        GizmoComponent& gizmo)
     {
-        auto& transform = registry.get<TransformComponent>(entity);
-        auto& camera = registry.get<CameraComponent>(entity);
-    }
-}
-
-void SkeletonGizmoSystem::Render(entt::registry& registry)
-{
-    for (entt::entity entity : registry.view<TransformComponent, MeshComponent, GizmoComponent>())
-    {
-        auto& transform = registry.get<TransformComponent>(entity);
-        auto& mesh = registry.get<MeshComponent>(entity);
-        auto& gizmo = registry.get<GizmoComponent>(entity);
-
-        if (!gizmo.isEnabled) continue;
+        if (!gizmo.isEnabled) 
+            return;
 
         std::shared_ptr<eeng::RenderableMesh> characterMesh = mesh.mesh;
         ShapeRendererPtr shapeRenderer = gizmo.shapeRenderer;
@@ -132,20 +125,19 @@ void SkeletonGizmoSystem::Render(entt::registry& registry)
             shapeRenderer->pop_states<ShapeRendering::Color4u>();
             shapeRenderer->pop_states<ShapeRendering::Color4u>();
         }
-    }
-};
+    };
 
-void AnimationSystem::Update(entt::registry& registry, float dt)
-{
-    for (entt::entity entity : registry.view<AnimationComponent, LinearVelocityComponent>())
+    void AnimationSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        AnimationComponent& animation,
+        LinearVelocityComponent& vel,
+        float dt)
     {
-        auto& animation = registry.get<AnimationComponent>(entity);
-        auto& velocity = registry.get<LinearVelocityComponent>(entity);
-
         animation.time += dt;
         if (!animation.useLayering)
         {
-            float blend = std::lerp(animation.blendFactor, glm::length(velocity.velocity) > 0.01f ? 1.0f : 0.0f, 0.5f);
+            float blend = std::lerp(animation.blendFactor, glm::length(vel.velocity) > 0.01f ? 1.0f : 0.0f, 0.5f);
             //animation.blendFactor = glm::length(velocity.velocity) > 0.01f ? 1 : 0;
             animation.blendFactor = blend;
         }

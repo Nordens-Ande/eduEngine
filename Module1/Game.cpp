@@ -91,41 +91,41 @@ bool Game::init(InputManagerPtr input)
     //PLAYER ENTITY
     auto entityPlayer = entity_registry->create();
     //characterWorldTransform = TransformComponent{ glm_aux::TRS({ 0, 0, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) };
-    entity_registry->emplace<TransformComponent>
+    entity_registry->emplace<ecs::TransformComponent>
     (
         entityPlayer,
-        TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) }
+        ecs::TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) }
     );
-    entity_registry->emplace<LinearVelocityComponent>
+    entity_registry->emplace<ecs::LinearVelocityComponent>
     (
         entityPlayer,
-        LinearVelocityComponent
+        ecs::LinearVelocityComponent
         {
             glm::vec3(1.0f, 0, 0)
         }
     );
-    entity_registry->emplace<MeshComponent>
+    entity_registry->emplace<ecs::MeshComponent>
     (
         entityPlayer,
-        MeshComponent
+        ecs::MeshComponent
         {
             forwardRenderer,
             characterMesh
         }
     );
-    entity_registry->emplace<PlayerControllerComponent>
+    entity_registry->emplace<ecs::PlayerControllerComponent>
     (
         entityPlayer,
-        PlayerControllerComponent
+        ecs::PlayerControllerComponent
         {
             35.0f,
             input
         }
     );
-    entity_registry->emplace<GizmoComponent>
+    entity_registry->emplace<ecs::GizmoComponent>
     (
         entityPlayer,
-        GizmoComponent
+        ecs::GizmoComponent
         {
             shapeRenderer
         }
@@ -135,10 +135,10 @@ bool Game::init(InputManagerPtr input)
     upperBodyFilter.mode = rightCharacterSubtreeUsesWave
         ? eeng::AnimationBranchDesc::Mode::IncludeSubtree
         : eeng::AnimationBranchDesc::Mode::ExcludeSubtree;
-    entity_registry->emplace<AnimationComponent>
+    entity_registry->emplace<ecs::AnimationComponent>
     (
         entityPlayer,
-        AnimationComponent
+        ecs::AnimationComponent
         {
             1, 
             2, 
@@ -150,32 +150,32 @@ bool Game::init(InputManagerPtr input)
 
     //NPC (HORSE) ENTITY
     auto entityHorse = entity_registry->create();
-    entity_registry->emplace<TransformComponent>
+    entity_registry->emplace<ecs::TransformComponent>
     (
         entityHorse,
-        TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.01f, 0.01f, 0.01f}) }
+        ecs::TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.01f, 0.01f, 0.01f}) }
     );
-    entity_registry->emplace<LinearVelocityComponent>
+    entity_registry->emplace<ecs::LinearVelocityComponent>
     (
         entityHorse,
-        LinearVelocityComponent
+        ecs::LinearVelocityComponent
         {
             glm::vec3(1.0f, 0, 0)
         }
     );
-    entity_registry->emplace<MeshComponent>
+    entity_registry->emplace<ecs::MeshComponent>
     (
         entityHorse,
-        MeshComponent
+        ecs::MeshComponent
         {
             forwardRenderer,
             horseMesh
         }
     );
-    entity_registry->emplace<NPCControllerComponent>
+    entity_registry->emplace<ecs::NPCControllerComponent>
     (
         entityHorse,
-        NPCControllerComponent
+        ecs::NPCControllerComponent
         {
             80.0f,
             0,
@@ -418,34 +418,34 @@ void Game::renderUI(float time)
 
     //speed for player
     ImGui::Separator();
-    for (entt::entity entity : entity_registry->view<PlayerControllerComponent>())
+    for (entt::entity entity : entity_registry->view<ecs::PlayerControllerComponent>())
     {
-        auto& controller = entity_registry->get<PlayerControllerComponent>(entity);
+        auto& controller = entity_registry->get<ecs::PlayerControllerComponent>(entity);
 
         ImGui::SliderFloat("Player speed: ", &controller.speed, 0.0f, 100.0f);
     }
 
     //animationComponent:
     ImGui::Separator();
-    for (entt::entity entity : entity_registry->view<AnimationComponent>())
+    for (entt::entity entity : entity_registry->view<ecs::AnimationComponent>())
     {
-        auto& animation = entity_registry->get<AnimationComponent>(entity);
+        auto& animation = entity_registry->get<ecs::AnimationComponent>(entity);
         ImGui::InputInt("Primary Animation Index", &animation.primaryAnimation, 0, 3);
         ImGui::InputInt("Secondary Animation Index", &animation.secondaryAnimation, 0, 3);
         ImGui::SliderFloat("Blend factor: ", &animation.blendFactor, 0.0f, 1.0f);
         ImGui::Checkbox("Use Layering", &animation.useLayering);
     }
-    for (entt::entity entity : entity_registry->view<GizmoComponent>())
+    for (entt::entity entity : entity_registry->view<ecs::GizmoComponent>())
     {
-        auto& gizmo = entity_registry->get<GizmoComponent>(entity);
+        auto& gizmo = entity_registry->get<ecs::GizmoComponent>(entity);
         ImGui::Checkbox("Gizmo Visibility", &gizmo.isEnabled);
     }
 
     //speed and points for all NPC entities
     ImGui::Separator();
-    for (entt::entity entity : entity_registry->view<NPCControllerComponent>())
+    for (entt::entity entity : entity_registry->view<ecs::NPCControllerComponent>())
     {
-        auto& controller = entity_registry->get<NPCControllerComponent>(entity);
+        auto& controller = entity_registry->get<ecs::NPCControllerComponent>(entity);
         ImGui::SliderFloat("NPC speed", &controller.speed, 0.0f, 200.0f);
         for (int i = 0; i < controller.points.size(); i++)
         {

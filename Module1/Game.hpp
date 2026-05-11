@@ -7,7 +7,8 @@
 #include "RenderableMesh.hpp"
 #include "ForwardRenderer.hpp"
 #include "ShapeRenderer.hpp"
-#include "Component.hpp"
+#include "Components.hpp"
+#include "Systems.hpp"
 
 /// @brief A Game may hold, update and render 3D geometry and GUI elements
 class Game : public eeng::GameBase
@@ -100,20 +101,20 @@ private:
     // Entity data
 
     // Entity Systems
-    MovementSystem movementSystem;
-    PlayerControllerSystem playerControllerSystem;
-    NPCControllerSystem npcControllerSystem;
-    AnimationSystem animationSystem;
-    std::vector<UpdateableSystem*> updateableSystems {
+    ecs::MovementSystem movementSystem;
+    ecs::PlayerControllerSystem playerControllerSystem;
+    ecs::NPCControllerSystem npcControllerSystem;
+    ecs::AnimationSystem animationSystem;
+    std::vector<ecs::UpdateableSystem*> updateableSystems {
         &movementSystem,
         &playerControllerSystem,
         &npcControllerSystem,
         &animationSystem,
     };
     
-    RenderSystem renderSystem;
-    SkeletonGizmoSystem skeletonGizmoSystem;
-    std::vector<RenderableSystem*> renderableSystems{
+    ecs::RenderSystem renderSystem;
+    ecs::SkeletonGizmoSystem skeletonGizmoSystem;
+    std::vector<ecs::RenderableSystem*> renderableSystems{
         &renderSystem,
         &skeletonGizmoSystem
     };
