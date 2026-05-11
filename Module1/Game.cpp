@@ -89,39 +89,7 @@ bool Game::init(InputManagerPtr input)
     //entity component & systems stuff
 
     //PLAYER ENTITY
-    auto entityPlayer = entity_registry->create();
-    //characterWorldTransform = TransformComponent{ glm_aux::TRS({ 0, 0, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) };
-    entity_registry->emplace<ecs::TransformComponent>
-    (
-        entityPlayer,
-        ecs::TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.04f, 0.04f, 0.04f}) }
-    );
-    entity_registry->emplace<ecs::LinearVelocityComponent>
-    (
-        entityPlayer,
-        ecs::LinearVelocityComponent
-        {
-            glm::vec3(1.0f, 0, 0)
-        }
-    );
-    entity_registry->emplace<ecs::MeshComponent>
-    (
-        entityPlayer,
-        ecs::MeshComponent
-        {
-            forwardRenderer,
-            characterMesh
-        }
-    );
-    entity_registry->emplace<ecs::PlayerControllerComponent>
-    (
-        entityPlayer,
-        ecs::PlayerControllerComponent
-        {
-            35.0f,
-            input
-        }
-    );
+    auto entityPlayer = ecs::Factory::CreatePlayer(*entity_registry, forwardRenderer, input, characterMesh, { 0, 1, 0 }, 0.0f, { 0.04f, 0.04f, 0.04f }, 5.0f);
     entity_registry->emplace<ecs::GizmoComponent>
     (
         entityPlayer,
@@ -130,63 +98,16 @@ bool Game::init(InputManagerPtr input)
             shapeRenderer
         }
     );
-    eeng::AnimationBranchDesc upperBodyFilter;
-    upperBodyFilter.root_node_name = "mixamorig:Spine";
-    upperBodyFilter.mode = rightCharacterSubtreeUsesWave
-        ? eeng::AnimationBranchDesc::Mode::IncludeSubtree
-        : eeng::AnimationBranchDesc::Mode::ExcludeSubtree;
-    entity_registry->emplace<ecs::AnimationComponent>
-    (
-        entityPlayer,
-        ecs::AnimationComponent
-        {
-            1, 
-            2, 
-            0.5f, 
-            false, 
-            upperBodyFilter
-        }
-    );
+
 
     //NPC (HORSE) ENTITY
-    auto entityHorse = entity_registry->create();
-    entity_registry->emplace<ecs::TransformComponent>
-    (
-        entityHorse,
-        ecs::TransformComponent{ glm_aux::TRS({ 0, 1, 0}, 0.0f, {0, 1, 0}, {0.01f, 0.01f, 0.01f}) }
-    );
-    entity_registry->emplace<ecs::LinearVelocityComponent>
-    (
-        entityHorse,
-        ecs::LinearVelocityComponent
-        {
-            glm::vec3(1.0f, 0, 0)
-        }
-    );
-    entity_registry->emplace<ecs::MeshComponent>
-    (
-        entityHorse,
-        ecs::MeshComponent
-        {
-            forwardRenderer,
-            horseMesh
-        }
-    );
-    entity_registry->emplace<ecs::NPCControllerComponent>
-    (
-        entityHorse,
-        ecs::NPCControllerComponent
-        {
-            80.0f,
-            0,
-            std::vector<glm::vec3> {
-                { 0, 0, 0 },
-                { 10, 0, 0 },
-                { 10, 0, 10 },
-                { 0, 0, 10 }
-            }
-        }
-    );
+    std::vector<glm::vec3> horsePoints {
+        { 0, 0, 0 },
+        { 10, 0, 0 },
+        { 10, 0, 10 },
+        { 0, 0, 10 }
+    };
+    auto entityHorse = ecs::Factory::CreateNPC(*entity_registry, forwardRenderer, horseMesh, { 0, 1, 0 }, 0.0f, { 0.01f, 0.01f, 0.01f }, 4.0f, horsePoints);
 
     return true;
 }

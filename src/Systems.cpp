@@ -11,7 +11,7 @@ namespace ecs
         LinearVelocityComponent& vel, 
         float dt)
     {
-        transform.transform = glm::translate(transform.transform, vel.velocity * dt);
+        transform.position += vel.velocity * dt;
     }
 
     void PlayerControllerSystem::OnUpdate(
@@ -44,7 +44,7 @@ namespace ecs
                 mesh.mesh->animateBlend(animation->primaryAnimation, animation->secondaryAnimation, animation->time, animation->time, animation->blendFactor);
         }
 
-        mesh.forwardRenderer->renderMesh(mesh.mesh, transform.transform);
+        mesh.forwardRenderer->renderMesh(mesh.mesh, transform.getTransform());
     }
 
     void NPCControllerSystem::OnUpdate(
@@ -60,15 +60,15 @@ namespace ecs
             return;
 
         //decompose translate from entitys transform
-        glm::vec3 scale;
-        glm::quat rotation;
-        glm::vec3 translation;
-        glm::vec3 skew;
-        glm::vec4 perspective;
-        glm::decompose(transform.transform, scale, rotation, translation, skew, perspective);
+        //glm::vec3 scale;
+        //glm::quat rotation;
+        //glm::vec3 translation;
+        //glm::vec3 skew;
+        //glm::vec4 perspective;
+        //glm::decompose(transform.transform, scale, rotation, translation, skew, perspective);
 
         glm::vec3 target = controller.points[controller.pointIndex];
-        glm::vec3 relative = target - translation;
+        glm::vec3 relative = target - transform.position;
 
         if (glm::length(relative) < 0.1f) //close enough, go to next point
         {
@@ -105,7 +105,7 @@ namespace ecs
 
         for (int i = 0; i < characterMesh->boneMatrices.size(); ++i) {
             auto IBinverse = glm::inverse(characterMesh->m_bones[i].inversebind_tfm);
-            glm::mat4 global = transform.transform * characterMesh->boneMatrices[i] * IBinverse;
+            glm::mat4 global = transform.getTransform() * characterMesh->boneMatrices[i] * IBinverse;
             glm::vec3 pos = glm::vec3(global[3]);
 
             glm::vec3 right = glm::vec3(global[0]); // X

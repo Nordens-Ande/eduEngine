@@ -9,6 +9,7 @@
 #include "ShapeRenderer.hpp"
 #include "Components.hpp"
 #include "Systems.hpp"
+#include "Factory.hpp"
 
 /// @brief A Game may hold, update and render 3D geometry and GUI elements
 class Game : public eeng::GameBase

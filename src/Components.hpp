@@ -18,10 +18,14 @@ namespace ecs
 {
 	struct TransformComponent
 	{
-		//glm::vec3 position;
-		//glm::vec3 scale;
-		//glm::vec3 rotation;
-		glm::mat4 transform;
+		glm::vec3 position;
+		float rotation;
+		glm::vec3 scale;
+		//glm::mat4 transform;
+		glm::mat4 getTransform()
+		{
+			return glm_aux::TRS(position, rotation, glm::vec3(0, 1, 0), scale);
+		};
 	};
 
 	struct LinearVelocityComponent
