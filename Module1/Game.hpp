@@ -108,12 +108,14 @@ private:
     ecs::NPCControllerSystem npcControllerSystem;
     ecs::AnimationSystem animationSystem;
     ecs::TPCameraSystem cameraSystem;
+    ecs::AttackSystem attackSystem;
     std::vector<ecs::UpdateableSystem*> updateableSystems {
         &cameraSystem,
         &movementSystem,
         &playerControllerSystem,
         &npcControllerSystem,
-        &animationSystem
+        &animationSystem,
+        &attackSystem
     };
     
     ecs::RenderSystem renderSystem;

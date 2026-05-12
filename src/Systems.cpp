@@ -160,5 +160,84 @@ namespace ecs
             //animation.blendFactor = glm::length(velocity.velocity) > 0.01f ? 1 : 0;
             animation.blendFactor = blend;
         }
+    };
+
+    void AttackSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        AttackComponent& attack,
+        float dt)
+    {
+        if (!attack.isAttacking)
+            return;
+
+        attack.isAttacking = false;
+
+        float closestDistance = -1;
+        entt::entity closestNPC;
+
+        for (entt::entity npc : registry.view<TransformComponent, NPCControllerComponent>())
+        {
+            TransformComponent& npcTrans = registry.get<TransformComponent>(npc);
+            float distance = glm::distance(transform.position, npcTrans.position);
+            if (distance < closestDistance || closestDistance == -1)
+            {
+                closestDistance = distance;
+                closestNPC = npc;
+            }
+        }
+
+        if (closestDistance != -1)
+        {
+            std::cout << "Found suitable NPC to attack, proccesing events..." << std::endl;
+
+            if (auto* source = registry.try_get<SourceComponent>(entity))
+                this->Notify(registry, entity, *source, events::EVENT_ATTACKED);
+            if (auto* source = registry.try_get<SourceComponent>(closestNPC))
+                this->Notify(registry, closestNPC, *source, events::EVENT_DIED);
+        }
+    }
+
+    void SourceSystem::Notify(
+        entt::registry& registry,
+        entt::entity entity,
+        SourceComponent& source,
+        events::Events event)
+    {
+        for (int i = 0; i < source.numberOfObservers; i++)
+        {
+            std::cout << "Notifying" << source.numberOfObservers << std::endl;
+            source.observers[i]->OnNotify(entity, event);
+        }
+    };
+    void SourceSystem::AddObserver(
+        SourceComponent& source,
+        ObserverComponent* observer)
+    {
+        source.observers[source.numberOfObservers] = observer;
+        source.numberOfObservers++;
+    }
+    void SourceSystem::RemoveObserver(
+        SourceComponent& source,
+        ObserverComponent* observer)
+    {
+        int index = -1;
+        for (int i = 0; i < source.numberOfObservers; ++i)
+        {
+            if (source.observers[i] != observer)
+                continue;
+            index = i;
+            break;
+        }
+
+        if (index == -1)
+            return;
+
+        for (int i = index; i < source.numberOfObservers - 1; ++i)
+        {
+            source.observers[i] = source.observers[i + 1];
+        }
+        source.numberOfObservers--;
     }
 }

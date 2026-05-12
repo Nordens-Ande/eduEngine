@@ -24,13 +24,13 @@ namespace ecs
 	{
 	public:
 		virtual void Update(entt::registry& registry, float dt) = 0;
-		virtual ~UpdateableSystem() = default;
+		//virtual ~UpdateableSystem() = default;
 	};
 	class RenderableSystem
 	{
 	public:
 		virtual void Render(entt::registry& registry) = 0;
-		virtual ~RenderableSystem() = default;
+		//virtual ~RenderableSystem() = default;
 	};
 
 #pragma endregion
@@ -72,10 +72,39 @@ namespace ecs
 		}
 	};
 
+	//template<typename Derived, typename 
+
 #pragma endregion
 
 
 #pragma region Systems
+
+	class SourceSystem /*: public UpdateableSystemTemplate<SourceSystem, SourceComponent>*/
+	{
+	public:
+		//void OnUpdate(
+		//	entt::registry& registry,
+		//	entt::entity entity,
+		//	SourceComponent&,
+		//	float dt)
+		//{
+
+		//};
+		void Notify(
+			entt::registry& registry,
+			entt::entity entity,
+			SourceComponent& source,
+			events::Events event
+		);
+		void AddObserver(
+			SourceComponent& source,
+			ObserverComponent* observer
+		);
+		void RemoveObserver(
+			SourceComponent& source,
+			ObserverComponent* observer
+		);
+	};
 
 	class MovementSystem : public UpdateableSystemTemplate<MovementSystem, TransformComponent, LinearVelocityComponent>
 	{
@@ -166,6 +195,29 @@ namespace ecs
 			float dt
 		);
 	};
+
+	class AttackSystem : public SourceSystem, public UpdateableSystemTemplate<AttackSystem, TransformComponent, AttackComponent>
+	{
+	public:
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			AttackComponent& attack,
+			float dt
+		);
+	};
+
+	//class ObserverSystem : public UpdateableSystemTemplate<ObserverSystem, ObserverComponent>
+	//{
+	//public:
+	//	void OnUpdate(
+	//		entt::registry& registry,
+	//		entt::entity entity,
+	//		ObserverComponent&,
+	//		float dt
+	//	);
+	//};
 
 #pragma endregion
 

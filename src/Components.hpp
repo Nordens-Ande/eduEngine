@@ -9,6 +9,7 @@
 #include "ShapeRenderer.hpp"
 #include "RenderableMesh.hpp"
 #include "InputManager.hpp"
+#include "Events.hpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -92,5 +93,50 @@ namespace ecs
 		bool useLayering;
 		eeng::AnimationBranchDesc filter;
 		float time = 0;
+	};
+
+	struct AttackComponent
+	{
+		int damage = 1;
+		bool isAttacking = false;
+	};
+
+	//https://stackoverflow.com/questions/35875616/c-store-functor-in-class
+	struct ObserverComponent
+	{
+		std::function<void(entt::entity entity, events::Events event)> OnNotify;
+	};
+
+	struct SourceComponent
+	{
+		ObserverComponent* observers[256];
+		int numberOfObservers = 0;
+		//std::vector<ObserverComponent*> observers;
+
+		//void AddObserver(ObserverComponent* observer)
+		//{
+		//	observers[numberOfObservers] = observer;
+		//	numberOfObservers++;
+		//};
+		//void RemoveObserver(ObserverComponent* observer)
+		//{
+		//	int index = -1;
+		//	for (int i = 0; i < numberOfObservers; ++i)
+		//	{
+		//		if (observers[i] != observer)
+		//			continue;
+		//		index = i;
+		//		break;
+		//	}
+
+		//	if (index == -1)
+		//		return;
+
+		//	for (int i = index; i < numberOfObservers - 1; ++i)
+		//	{
+		//		observers[i] = observers[i + 1];
+		//	}
+		//	numberOfObservers--;
+		//};
 	};
 }

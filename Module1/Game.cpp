@@ -92,7 +92,14 @@ bool Game::init(InputManagerPtr input)
     auto entityPlayer = ecs::Factory::CreatePlayer(*entity_registry, forwardRenderer, input, characterMesh, { 0, 1, 0 }, 0.0f, { 0.04f, 0.04f, 0.04f }, 5.0f);
     entity_registry->emplace<ecs::GizmoComponent>(entityPlayer, ecs::GizmoComponent{ shapeRenderer });
     entity_registry->emplace<ecs::CameraComponent>(entityPlayer, ecs::CameraComponent{ input });
-
+    entity_registry->emplace<ecs::AttackComponent>(entityPlayer, ecs::AttackComponent{ });
+    ecs::ObserverComponent observer{};
+    observer.OnNotify = [](entt::entity entity, events::Events event)
+        {
+            std::cout << "I just killed that animal" << std::endl;
+            std::cout << static_cast<int>(event) << std::endl;
+        };
+    entity_registry->emplace<ecs::ObserverComponent>(entityPlayer, observer);
 
     //NPC (HORSE) ENTITY
     std::vector<glm::vec3> horsePoints {
@@ -102,9 +109,14 @@ bool Game::init(InputManagerPtr input)
         { 0, 0, 10 }
     };
     auto entityHorse = ecs::Factory::CreateNPC(*entity_registry, forwardRenderer, horseMesh, { 0, 1, 0 }, 0.0f, { 0.01f, 0.01f, 0.01f }, 4.0f, horsePoints);
+    ecs::SourceComponent source{ };
+    attackSystem.AddObserver(source, &entity_registry->get<ecs::ObserverComponent>(entityPlayer));
+    entity_registry->emplace<ecs::SourceComponent>(entityHorse, source);
 
     entt::entity entity = entity_registry->view<ecs::CameraComponent>().front();
     camera = &entity_registry->get<ecs::CameraComponent>(entity);
+
+
 
     return true;
 }
@@ -372,6 +384,14 @@ void Game::renderUI(float time)
             glm::vec3& point = controller.points[i];
             ImGui::SliderFloat3(("NPC Point: " + std::to_string(i)).c_str(), glm::value_ptr(point), -10.0f, 10.0f);
         }
+    }
+
+    ImGui::Separator();
+    for (entt::entity entity : entity_registry->view<ecs::AttackComponent>())
+    {
+        auto& attack = entity_registry->get<ecs::AttackComponent>(entity);
+
+        ImGui::Checkbox("Test attack", &attack.isAttacking);
     }
 
     ImGui::End(); // end info window
