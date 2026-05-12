@@ -131,11 +131,17 @@ namespace ecs
 	//	void Update(entt::registry& registry, float dt) override;
 	//};
 
-	//class TPCameraSystem : public UpdateableSystem
-	//{
-	//public:
-	//	void Update(entt::registry& registry, float dt) override;
-	//};
+	class TPCameraSystem : public UpdateableSystemTemplate<TPCameraSystem, CameraComponent, TransformComponent>
+	{
+	public:
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			CameraComponent& camera,
+			TransformComponent& transform,
+			float dt
+		);
+	};
 
 	class SkeletonGizmoSystem : public RenderableSystemTemplate<SkeletonGizmoSystem, TransformComponent, MeshComponent, GizmoComponent>
 	{

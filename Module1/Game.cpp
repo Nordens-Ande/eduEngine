@@ -90,14 +90,8 @@ bool Game::init(InputManagerPtr input)
 
     //PLAYER ENTITY
     auto entityPlayer = ecs::Factory::CreatePlayer(*entity_registry, forwardRenderer, input, characterMesh, { 0, 1, 0 }, 0.0f, { 0.04f, 0.04f, 0.04f }, 5.0f);
-    entity_registry->emplace<ecs::GizmoComponent>
-    (
-        entityPlayer,
-        ecs::GizmoComponent
-        {
-            shapeRenderer
-        }
-    );
+    entity_registry->emplace<ecs::GizmoComponent>(entityPlayer, ecs::GizmoComponent{ shapeRenderer });
+    entity_registry->emplace<ecs::CameraComponent>(entityPlayer, ecs::CameraComponent{ input });
 
 
     //NPC (HORSE) ENTITY
@@ -109,6 +103,9 @@ bool Game::init(InputManagerPtr input)
     };
     auto entityHorse = ecs::Factory::CreateNPC(*entity_registry, forwardRenderer, horseMesh, { 0, 1, 0 }, 0.0f, { 0.01f, 0.01f, 0.01f }, 4.0f, horsePoints);
 
+    entt::entity entity = entity_registry->view<ecs::CameraComponent>().front();
+    camera = &entity_registry->get<ecs::CameraComponent>(entity);
+
     return true;
 }
 
@@ -117,7 +114,7 @@ void Game::update(
     float deltaTime,
     InputManagerPtr input)
 {
-    updateCamera(input);
+    //updateCamera(input);
 
     //updatePlayer(deltaTime, input);
     for (auto system : updateableSystems) //iterates through all systems and updates them
@@ -156,7 +153,9 @@ void Game::update(
     if (input->GetMouseState().rightButton)
     {
         // Note: mouse Y is typically inverted in window coordinates, so we flip it here to get the correct ray direction
-        glm::ivec2 windowPos(camera.mouse_xy_prev.x, matrices.windowSize.y - camera.mouse_xy_prev.y);
+        //entt::entity entity = entity_registry->view<ecs::CameraComponent>().front();
+        //ecs::CameraComponent camera = entity_registry->get<ecs::CameraComponent>(entity_registry->view<ecs::CameraComponent>().front());
+        glm::ivec2 windowPos(camera->mouse_xy_prev.x, matrices.windowSize.y - camera->mouse_xy_prev.y);
         
         // Compute a ray from the camera through the mouse cursor
         auto ray = glm_aux::world_ray_from_window_coords(windowPos, matrices.V, matrices.P, matrices.VP);
@@ -179,13 +178,13 @@ void Game::render(
 
     // Projection matrix
     const float aspectRatio = float(windowWidth) / windowHeight;
-    matrices.P = glm::perspective(glm::radians(60.0f), aspectRatio, camera.nearPlane, camera.farPlane);
+    matrices.P = glm::perspective(glm::radians(60.0f), aspectRatio, camera->nearPlane, camera->farPlane);
     // View matrix
-    matrices.V = glm::lookAt(camera.pos, camera.lookAt, camera.up);
+    matrices.V = glm::lookAt(camera->pos, camera->lookAt, camera->up);
     // Viewport matrix
     matrices.VP = glm_aux::create_viewport_matrix(0.0f, 0.0f, windowWidth, windowHeight, 0.0f, 1.0f);
     // Begin rendering pass
-    forwardRenderer->beginPass(matrices.P, matrices.V, pointlight.pos, pointlight.color, camera.pos);
+    forwardRenderer->beginPass(matrices.P, matrices.V, pointlight.pos, pointlight.color, camera->pos);
 
     // Grass
     forwardRenderer->renderMesh(grassMesh, grassWorldMatrix);
@@ -413,56 +412,58 @@ void Game::destroy()
 
 }
 
-void Game::updateCamera(
-    InputManagerPtr input)
-{
-    // Fetch mouse and compute movement since last frame
-    auto mouse = input->GetMouseState();
-    glm::ivec2 mouse_xy{ mouse.x, mouse.y };
-    glm::ivec2 mouse_xy_diff{ 0, 0 };
-    if (mouse.leftButton && camera.mouse_xy_prev.x >= 0)
-        mouse_xy_diff = camera.mouse_xy_prev - mouse_xy;
-    camera.mouse_xy_prev = mouse_xy;
+//void Game::updateCamera(
+//    InputManagerPtr input)
+//{
+//    //camera.lookAt = entity_registry->get<ecs::TransformComponent>(entity).position;
+//
+//    // Fetch mouse and compute movement since last frame
+//    auto mouse = input->GetMouseState();
+//    glm::ivec2 mouse_xy{ mouse.x, mouse.y };
+//    glm::ivec2 mouse_xy_diff{ 0, 0 };
+//    if (mouse.leftButton && camera->mouse_xy_prev.x >= 0)
+//        mouse_xy_diff = camera->mouse_xy_prev - mouse_xy;
+//    camera->mouse_xy_prev = mouse_xy;
+//
+//    // Update camera rotation from mouse movement
+//    camera->yaw += mouse_xy_diff.x * camera->sensitivity;
+//    camera->pitch += mouse_xy_diff.y * camera->sensitivity;
+//    camera->pitch = glm::clamp(camera->pitch, -glm::radians(89.0f), 0.0f);
+//
+//    // Update camera position
+//    const glm::vec4 rotatedPos = glm_aux::R(camera->yaw, camera->pitch) * glm::vec4(0.0f, 0.0f, camera->distance, 1.0f);
+//    camera->pos = camera->lookAt + glm::vec3(rotatedPos);
+//}
 
-    // Update camera rotation from mouse movement
-    camera.yaw += mouse_xy_diff.x * camera.sensitivity;
-    camera.pitch += mouse_xy_diff.y * camera.sensitivity;
-    camera.pitch = glm::clamp(camera.pitch, -glm::radians(89.0f), 0.0f);
-
-    // Update camera position
-    const glm::vec4 rotatedPos = glm_aux::R(camera.yaw, camera.pitch) * glm::vec4(0.0f, 0.0f, camera.distance, 1.0f);
-    camera.pos = camera.lookAt + glm::vec3(rotatedPos);
-}
-
-void Game::updatePlayer(
-    float deltaTime,
-    InputManagerPtr input)
-{
-    //// Fetch keys relevant for player movement
-    //using Key = eeng::InputManager::Key;
-    //bool W = input->IsKeyPressed(Key::W);
-    //bool A = input->IsKeyPressed(Key::A);
-    //bool S = input->IsKeyPressed(Key::S);
-    //bool D = input->IsKeyPressed(Key::D);
-
-    //// Compute vectors in the local space of the player
-    //player.fwd = glm::vec3(glm_aux::R(camera.yaw, glm_aux::vec3_010) * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-    //player.right = glm::cross(player.fwd, glm_aux::vec3_010);
-
-    //// Compute the total movement as a 3D vector
-    //auto movement =
-    //    player.fwd * player.velocity * deltaTime * ((W ? 1.0f : 0.0f) + (S ? -1.0f : 0.0f)) +
-    //    player.right * player.velocity * deltaTime * ((A ? -1.0f : 0.0f) + (D ? 1.0f : 0.0f));
-
-    //// Update player position and forward view ray
-    //player.pos += movement;
-    //player.viewRay = glm_aux::Ray{ player.pos + glm::vec3(0.0f, 2.0f, 0.0f), player.fwd };
-
-    //// Update camera to track the player
-    //camera.lookAt += movement;
-    //camera.pos += movement;
-
-    //movementSystem.Update(*entity_registry, deltaTime);
-    //controllerSystem.Update(*entity_registry, deltaTime);
-
-}
+//void Game::updatePlayer(
+//    float deltaTime,
+//    InputManagerPtr input)
+//{
+//    //// Fetch keys relevant for player movement
+//    //using Key = eeng::InputManager::Key;
+//    //bool W = input->IsKeyPressed(Key::W);
+//    //bool A = input->IsKeyPressed(Key::A);
+//    //bool S = input->IsKeyPressed(Key::S);
+//    //bool D = input->IsKeyPressed(Key::D);
+//
+//    //// Compute vectors in the local space of the player
+//    //player.fwd = glm::vec3(glm_aux::R(camera.yaw, glm_aux::vec3_010) * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+//    //player.right = glm::cross(player.fwd, glm_aux::vec3_010);
+//
+//    //// Compute the total movement as a 3D vector
+//    //auto movement =
+//    //    player.fwd * player.velocity * deltaTime * ((W ? 1.0f : 0.0f) + (S ? -1.0f : 0.0f)) +
+//    //    player.right * player.velocity * deltaTime * ((A ? -1.0f : 0.0f) + (D ? 1.0f : 0.0f));
+//
+//    //// Update player position and forward view ray
+//    //player.pos += movement;
+//    //player.viewRay = glm_aux::Ray{ player.pos + glm::vec3(0.0f, 2.0f, 0.0f), player.fwd };
+//
+//    //// Update camera to track the player
+//    //camera.lookAt += movement;
+//    //camera.pos += movement;
+//
+//    //movementSystem.Update(*entity_registry, deltaTime);
+//    //controllerSystem.Update(*entity_registry, deltaTime);
+//
+//}

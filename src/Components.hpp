@@ -9,7 +9,6 @@
 #include "ShapeRenderer.hpp"
 #include "RenderableMesh.hpp"
 #include "InputManager.hpp"
-//#include "Game.cpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -60,6 +59,8 @@ namespace ecs
 
 	struct CameraComponent // Optional
 	{ //fetched from Game.hpp camera struct:
+		InputManagerPtr inputManager;
+
 		glm::vec3 lookAt = glm_aux::vec3_000;   // Point of interest
 		glm::vec3 up = glm_aux::vec3_010;       // Local up-vector
 		float distance = 15.0f;                 // Distance to point-of-interest

@@ -80,14 +80,33 @@ namespace ecs
         }
     }
 
-    //void TPCameraSystem::Update(entt::registry& registry, float dt)
-    //{
-    //    for (entt::entity entity : registry.view<TransformComponent, CameraComponent>())
-    //    {
-    //        auto& transform = registry.get<TransformComponent>(entity);
-    //        auto& camera = registry.get<CameraComponent>(entity);
-    //    }
-    //}
+    void TPCameraSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        CameraComponent& camera,
+        TransformComponent& transform,
+        float dt)
+    {
+        InputManagerPtr input = camera.inputManager;
+
+        camera.lookAt = transform.position;
+
+        auto mouse = input->GetMouseState();
+        glm::ivec2 mouse_xy{ mouse.x, mouse.y };
+        glm::ivec2 mouse_xy_diff{ 0, 0 };
+        if (mouse.leftButton && camera.mouse_xy_prev.x >= 0)
+            mouse_xy_diff = camera.mouse_xy_prev - mouse_xy;
+        camera.mouse_xy_prev = mouse_xy;
+
+        // Update camera rotation from mouse movement
+        camera.yaw += mouse_xy_diff.x * camera.sensitivity;
+        camera.pitch += mouse_xy_diff.y * camera.sensitivity;
+        camera.pitch = glm::clamp(camera.pitch, -glm::radians(89.0f), 0.0f);
+
+        // Update camera position
+        const glm::vec4 rotatedPos = glm_aux::R(camera.yaw, camera.pitch) * glm::vec4(0.0f, 0.0f, camera.distance, 1.0f);
+        camera.pos = camera.lookAt + glm::vec3(rotatedPos);
+    }
 
     void SkeletonGizmoSystem::OnRender(
         entt::registry& registry,

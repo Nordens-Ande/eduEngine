@@ -63,23 +63,24 @@ private:
     } matrices;
 
     // Basic third-person camera
-    struct Camera
-    {
-        glm::vec3 lookAt = glm_aux::vec3_000;   // Point of interest
-        glm::vec3 up = glm_aux::vec3_010;       // Local up-vector
-        float distance = 15.0f;                 // Distance to point-of-interest
-        float sensitivity = 0.005f;             // Mouse sensitivity
-        const float nearPlane = 1.0f;           // Rendering near plane
-        const float farPlane = 500.0f;          // Rendering far plane
+    //struct Camera
+    //{
+    //    glm::vec3 lookAt = glm_aux::vec3_000;   // Point of interest
+    //    glm::vec3 up = glm_aux::vec3_010;       // Local up-vector
+    //    float distance = 15.0f;                 // Distance to point-of-interest
+    //    float sensitivity = 0.005f;             // Mouse sensitivity
+    //    const float nearPlane = 1.0f;           // Rendering near plane
+    //    const float farPlane = 500.0f;          // Rendering far plane
 
-        // Position and view angles (computed when camera is updated)
-        float yaw = 0.0f;                       // Horizontal angle (radians)
-        float pitch = -glm::pi<float>() / 8;    // Vertical angle (radians)
-        glm::vec3 pos;                          // Camera position
+    //    // Position and view angles (computed when camera is updated)
+    //    float yaw = 0.0f;                       // Horizontal angle (radians)
+    //    float pitch = -glm::pi<float>() / 8;    // Vertical angle (radians)
+    //    glm::vec3 pos;                          // Camera position
 
-        // Previous mouse position
-        glm::ivec2 mouse_xy_prev{ -1, -1 };
-    } camera;
+    //    // Previous mouse position
+    //    glm::ivec2 mouse_xy_prev{ -1, -1 };
+    //} camera;
+    ecs::CameraComponent* camera = nullptr;
 
     // Light properties
     struct PointLight
@@ -106,11 +107,13 @@ private:
     ecs::PlayerControllerSystem playerControllerSystem;
     ecs::NPCControllerSystem npcControllerSystem;
     ecs::AnimationSystem animationSystem;
+    ecs::TPCameraSystem cameraSystem;
     std::vector<ecs::UpdateableSystem*> updateableSystems {
+        &cameraSystem,
         &movementSystem,
         &playerControllerSystem,
         &npcControllerSystem,
-        &animationSystem,
+        &animationSystem
     };
     
     ecs::RenderSystem renderSystem;
@@ -143,14 +146,14 @@ private:
 
     /// @brief Placeholder system for updating the camera position based on inputs
     /// @param input Input from mouse, keyboard and controllers
-    void updateCamera(
-        InputManagerPtr input);
+    //void updateCamera(
+    //    InputManagerPtr input);
 
     /// @brief Placeholder system for updating the 'player' based on inputs
     /// @param deltaTime 
-    void updatePlayer(
-        float deltaTime,
-        InputManagerPtr input);
+    //void updatePlayer(
+    //    float deltaTime,
+    //    InputManagerPtr input);
 };
 
 #endif
