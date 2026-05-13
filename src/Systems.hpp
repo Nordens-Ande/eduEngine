@@ -96,6 +96,11 @@ namespace ecs
 			SourceComponent& source,
 			events::Events event
 		);
+		bool TryNotify(
+			entt::registry& registry,
+			entt::entity entity,
+			events::Events event
+		);
 		void AddObserver(
 			SourceComponent& source,
 			ObserverComponent* observer

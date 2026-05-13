@@ -192,10 +192,12 @@ namespace ecs
         {
             std::cout << "Found suitable NPC to attack, proccesing events..." << std::endl;
 
-            if (auto* source = registry.try_get<SourceComponent>(entity))
-                this->Notify(registry, entity, *source, events::EVENT_ATTACKED);
-            if (auto* source = registry.try_get<SourceComponent>(closestNPC))
-                this->Notify(registry, closestNPC, *source, events::EVENT_DIED);
+            //if (auto* source = registry.try_get<SourceComponent>(entity))
+            //    this->Notify(registry, entity, *source, events::EVENT_ATTACKED);
+            //if (auto* source = registry.try_get<SourceComponent>(closestNPC))
+            //    this->Notify(registry, closestNPC, *source, events::EVENT_DIED);
+            TryNotify(registry, entity, events::EVENT_ATTACKED);
+            TryNotify(registry, closestNPC, events::EVENT_DIED);
         }
     }
 
@@ -207,9 +209,21 @@ namespace ecs
     {
         for (int i = 0; i < source.numberOfObservers; i++)
         {
-            std::cout << "Notifying" << source.numberOfObservers << std::endl;
+            //std::cout << "Notifying" << source.numberOfObservers << std::endl;
             source.observers[i]->OnNotify(entity, event);
         }
+    };
+    bool SourceSystem::TryNotify(
+        entt::registry& registry,
+        entt::entity entity,
+        events::Events event)
+    {
+        if (auto* source = registry.try_get<SourceComponent>(entity))
+        {
+            this->Notify(registry, entity, *source, event);
+            return true;
+        }
+        return false;
     };
     void SourceSystem::AddObserver(
         SourceComponent& source,
