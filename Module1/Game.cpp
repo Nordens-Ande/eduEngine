@@ -100,6 +100,8 @@ bool Game::init(InputManagerPtr input)
             std::cout << static_cast<int>(event) << std::endl;
         };
     entity_registry->emplace<ecs::ObserverComponent>(entityPlayer, observer);
+    entity_registry->emplace<ecs::AABBColliderComponent>(entityPlayer, ecs::AABBColliderComponent{});
+    entity_registry->emplace<ecs::SphereColliderComponent>(entityPlayer, ecs::SphereColliderComponent{});
 
     //NPC (HORSE) ENTITY
     std::vector<glm::vec3> horsePoints {

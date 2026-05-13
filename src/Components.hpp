@@ -10,6 +10,7 @@
 #include "RenderableMesh.hpp"
 #include "InputManager.hpp"
 #include "Events.hpp"
+#include "AABB.h"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -111,32 +112,18 @@ namespace ecs
 	{
 		ObserverComponent* observers[256];
 		int numberOfObservers = 0;
-		//std::vector<ObserverComponent*> observers;
+	};
 
-		//void AddObserver(ObserverComponent* observer)
-		//{
-		//	observers[numberOfObservers] = observer;
-		//	numberOfObservers++;
-		//};
-		//void RemoveObserver(ObserverComponent* observer)
-		//{
-		//	int index = -1;
-		//	for (int i = 0; i < numberOfObservers; ++i)
-		//	{
-		//		if (observers[i] != observer)
-		//			continue;
-		//		index = i;
-		//		break;
-		//	}
-
-		//	if (index == -1)
-		//		return;
-
-		//	for (int i = index; i < numberOfObservers - 1; ++i)
-		//	{
-		//		observers[i] = observers[i + 1];
-		//	}
-		//	numberOfObservers--;
-		//};
+	struct AABBColliderComponent
+	{
+		eeng::AABB collider;
+	};
+	
+	struct SphereColliderComponent
+	{
+		bool useAABB = true;
+		bool useMaxRadius = true;
+		glm::vec3 position;
+		float radius;
 	};
 }

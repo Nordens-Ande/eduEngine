@@ -254,4 +254,61 @@ namespace ecs
         }
         source.numberOfObservers--;
     }
+
+    void AABBColliderSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        MeshComponent& mesh,
+        AABBColliderComponent& aabb)
+    {
+        aabb.collider = mesh.mesh->m_model_aabb.post_transform(transform.getTransform());
+    }
+
+    void AABBGizmoSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        AABBColliderComponent& aabb,
+        GizmoComponent& gizmo)
+    {
+        if (gizmo.isEnabled)
+            gizmo.shapeRenderer->push_AABB(aabb.collider.min, aabb.collider.max);
+    }
+
+    void SphereColliderSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        SphereColliderComponent& sphere)
+    {
+        if (!sphere.useAABB)
+        {
+            sphere.position = transform.position;
+        }
+        else if (auto* aabb = registry.try_get<AABBColliderComponent>(entity))
+        {
+            glm::vec4 sphereFromAABB = aabb->collider.getBoundingSphere();
+            sphere.position = sphereFromAABB;
+            if (sphere.useMaxRadius && sphere.radius < sphereFromAABB.w)
+                sphere.radius = sphereFromAABB.w;
+            else if (!sphere.useMaxRadius)
+                sphere.radius = sphereFromAABB.w;
+        }
+    }
+
+    void SphereGizmoSystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        SphereColliderComponent& sphere,
+        GizmoComponent& gizmo)
+    {
+        if (gizmo.isEnabled)
+        {
+            gizmo.shapeRenderer->push_states(glm_aux::TS(sphere.position, glm::vec3(1.0f, 1.0f, 1.0f)));
+            gizmo.shapeRenderer->push_sphere_wireframe(sphere.radius, sphere.radius);
+            gizmo.shapeRenderer->pop_states<glm::mat4>();
+        }
+    }
 }

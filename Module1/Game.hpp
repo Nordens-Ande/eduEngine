@@ -115,14 +115,22 @@ private:
         &playerControllerSystem,
         &npcControllerSystem,
         &animationSystem,
-        &attackSystem
+        &attackSystem,
     };
     
     ecs::RenderSystem renderSystem;
     ecs::SkeletonGizmoSystem skeletonGizmoSystem;
+    ecs::AABBColliderSystem aabbSystem; //MAYBE CONVERT TO RENDERBALE?
+    ecs::AABBGizmoSystem aabbGizmoSystem;
+    ecs::SphereColliderSystem sphereSystem;
+    ecs::SphereGizmoSystem sphereGizmoSystem;
     std::vector<ecs::RenderableSystem*> renderableSystems{
         &renderSystem,
-        &skeletonGizmoSystem
+        &skeletonGizmoSystem,
+        &aabbSystem,
+        &aabbGizmoSystem,
+        &sphereSystem,
+        &sphereGizmoSystem
     };
 
     //TransformComponent characterWorldTransform;

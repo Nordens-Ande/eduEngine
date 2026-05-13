@@ -213,6 +213,53 @@ namespace ecs
 		);
 	};
 
+	class AABBColliderSystem : public RenderableSystemTemplate<AABBColliderSystem, TransformComponent, MeshComponent, AABBColliderComponent>
+	{
+	public:
+		void OnRender(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			MeshComponent& mesh,
+			AABBColliderComponent& aabb
+		);
+	};
+
+	class AABBGizmoSystem : public RenderableSystemTemplate<AABBGizmoSystem, TransformComponent, AABBColliderComponent, GizmoComponent>
+	{
+	public:
+		void OnRender(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			AABBColliderComponent& aabb,
+			GizmoComponent& gizmo
+		);
+	};
+
+	class SphereColliderSystem : public RenderableSystemTemplate<SphereColliderSystem, TransformComponent, SphereColliderComponent>
+	{
+	public:
+		void OnRender(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			SphereColliderComponent& sphere
+		);
+	};
+
+	class SphereGizmoSystem : public RenderableSystemTemplate<SphereGizmoSystem, TransformComponent, SphereColliderComponent, GizmoComponent>
+	{
+	public:
+		void OnRender(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			SphereColliderComponent& sphere,
+			GizmoComponent& gizmo
+		);
+	};
+
 	//class ObserverSystem : public UpdateableSystemTemplate<ObserverSystem, ObserverComponent>
 	//{
 	//public:
