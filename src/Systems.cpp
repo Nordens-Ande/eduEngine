@@ -1,6 +1,7 @@
 #include "Systems.hpp"
 #include <glm/gtx/matrix_decompose.hpp>
 #include "glmcommon.hpp"
+#include "imgui.h"
 
 namespace ecs
 {
@@ -196,31 +197,33 @@ namespace ecs
             //    this->Notify(registry, entity, *source, events::EVENT_ATTACKED);
             //if (auto* source = registry.try_get<SourceComponent>(closestNPC))
             //    this->Notify(registry, closestNPC, *source, events::EVENT_DIED);
-            TryNotify(registry, entity, events::EVENT_ATTACKED);
-            TryNotify(registry, closestNPC, events::EVENT_DIED);
+            TryNotify(registry, entity, closestNPC, events::EVENT_ATTACKED);
+            TryNotify(registry, closestNPC, entity, events::EVENT_DIED);
         }
     }
 
     void SourceSystem::Notify(
         entt::registry& registry,
-        entt::entity entity,
+        entt::entity sourceEntity,
+        entt::entity selfEntity,
         SourceComponent& source,
         events::Events event)
     {
         for (int i = 0; i < source.numberOfObservers; i++)
         {
             //std::cout << "Notifying" << source.numberOfObservers << std::endl;
-            source.observers[i]->OnNotify(entity, event);
+            source.observers[i]->OnNotify(registry, sourceEntity, selfEntity, event);
         }
     };
     bool SourceSystem::TryNotify(
         entt::registry& registry,
-        entt::entity entity,
+        entt::entity sourceEntity,
+        entt::entity selfEntity,
         events::Events event)
     {
-        if (auto* source = registry.try_get<SourceComponent>(entity))
+        if (auto* source = registry.try_get<SourceComponent>(sourceEntity))
         {
-            this->Notify(registry, entity, *source, event);
+            this->Notify(registry, sourceEntity, selfEntity, *source, event);
             return true;
         }
         return false;
@@ -290,10 +293,15 @@ namespace ecs
         {
             glm::vec4 sphereFromAABB = aabb->collider.getBoundingSphere();
             sphere.position = sphereFromAABB;
-            if (sphere.useMaxRadius && sphere.radius < sphereFromAABB.w)
+            if (sphere.useMaxRadius)
+            {
+                if (sphere.radius < sphereFromAABB.w)
+                    sphere.radius = sphereFromAABB.w;
+            }
+            else
+            {
                 sphere.radius = sphereFromAABB.w;
-            else if (!sphere.useMaxRadius)
-                sphere.radius = sphereFromAABB.w;
+            }
         }
     }
 
@@ -309,6 +317,65 @@ namespace ecs
             gizmo.shapeRenderer->push_states(glm_aux::TS(sphere.position, glm::vec3(1.0f, 1.0f, 1.0f)));
             gizmo.shapeRenderer->push_sphere_wireframe(sphere.radius, sphere.radius);
             gizmo.shapeRenderer->pop_states<glm::mat4>();
+        }
+    }
+
+    void WorldGUISystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        WorldGUIComponent& gui,
+        float dt)
+    {
+        for (auto& pair : gui.elements)
+        {
+            pair.second -= dt;
+        }
+        gui.elements.erase(
+            std::remove_if(gui.elements.begin(), gui.elements.end(),
+                [](const auto& pair)
+                {
+                    return pair.second < 0.0f;
+                }),
+            gui.elements.end()
+        );
+    }
+    void WorldGUISystem::OnRender(
+        entt::registry& registry,
+        entt::entity entity,
+        TransformComponent& transform,
+        WorldGUIComponent& gui)
+    {
+        for (int i = 0; i < gui.elements.size(); i++)
+        {
+            auto& pair = gui.elements[i];
+
+            auto world_pos = transform.position + glm::vec3(0, gui.startHeight, 0);
+            glm::ivec2 window_coords;
+            if (glm_aux::window_coords_from_world_pos(world_pos, VP_P_V, window_coords))
+            {
+                // Draw an ImGui label at the projected window coordinates
+                ImGui::SetNextWindowPos(
+                    ImVec2{ float(window_coords.x), float(windowSize.y - window_coords.y - 25 * i) },
+                    ImGuiCond_Always,
+                    ImVec2{ 0.0f, 0.0f });
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x80000000);
+                ImGui::PushStyleColor(ImGuiCol_Text, 0xffffffff);
+
+                ImGuiWindowFlags flags =
+                    ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_NoInputs |
+                    // ImGuiWindowFlags_NoBackground |
+                    ImGuiWindowFlags_AlwaysAutoResize;
+
+                std::string name = "text_box##" + i;
+                if (ImGui::Begin(name.c_str(), nullptr, flags))
+                {
+                    ImGui::Text("%s", pair.first.c_str());
+                }
+                ImGui::End();
+                ImGui::PopStyleColor(2);
+            }
         }
     }
 }

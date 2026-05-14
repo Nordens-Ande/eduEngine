@@ -93,11 +93,17 @@ bool Game::init(InputManagerPtr input)
     entity_registry->emplace<ecs::GizmoComponent>(entityPlayer, ecs::GizmoComponent{ shapeRenderer });
     entity_registry->emplace<ecs::CameraComponent>(entityPlayer, ecs::CameraComponent{ input });
     entity_registry->emplace<ecs::AttackComponent>(entityPlayer, ecs::AttackComponent{ });
+    entity_registry->emplace<ecs::WorldGUIComponent>(entityPlayer, ecs::WorldGUIComponent{ });
     ecs::ObserverComponent observer{};
-    observer.OnNotify = [](entt::entity entity, events::Events event)
+    observer.OnNotify = [](entt::registry& registry, entt::entity source, entt::entity self, events::Events event)
         {
+            std::cout << "Recieved Event: " + static_cast<int>(event) << std::endl;
             std::cout << "I just killed that animal" << std::endl;
-            std::cout << static_cast<int>(event) << std::endl;
+            if (auto gui = registry.try_get<ecs::WorldGUIComponent>(self))
+            {
+                std::cout << "Adding GUI element" << std::endl;
+                gui->elements.push_back(std::make_pair("I just killed that animal", 10.0f));
+            }
         };
     entity_registry->emplace<ecs::ObserverComponent>(entityPlayer, observer);
     entity_registry->emplace<ecs::AABBColliderComponent>(entityPlayer, ecs::AABBColliderComponent{});
@@ -426,6 +432,13 @@ void Game::renderUI(float time)
             ImGui::End();
         }
         ImGui::PopStyleColor(2);
+    }
+
+    worldGUISystem.VP_P_V = VP_P_V;
+    worldGUISystem.windowSize = matrices.windowSize;
+    for (auto system : renderableUISystems)
+    {
+        system->Render(*entity_registry);
     }
 }
 

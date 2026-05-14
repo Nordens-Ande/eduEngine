@@ -72,7 +72,7 @@ namespace ecs
 		}
 	};
 
-	//template<typename Derived, typename 
+	
 
 #pragma endregion
 
@@ -92,13 +92,15 @@ namespace ecs
 		//};
 		void Notify(
 			entt::registry& registry,
-			entt::entity entity,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
 			SourceComponent& source,
 			events::Events event
 		);
 		bool TryNotify(
 			entt::registry& registry,
-			entt::entity entity,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
 			events::Events event
 		);
 		void AddObserver(
@@ -257,6 +259,27 @@ namespace ecs
 			TransformComponent& transform,
 			SphereColliderComponent& sphere,
 			GizmoComponent& gizmo
+		);
+	};
+
+	class WorldGUISystem : public UpdateableSystemTemplate<WorldGUISystem, TransformComponent, WorldGUIComponent>, public RenderableSystemTemplate<WorldGUISystem, TransformComponent, WorldGUIComponent>
+	{
+	public:
+		glm::mat4 VP_P_V;
+		glm::ivec2 windowSize;
+
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			WorldGUIComponent& gui,
+			float dt
+		);
+		void OnRender(
+			entt::registry& registry,
+			entt::entity entity,
+			TransformComponent& transform,
+			WorldGUIComponent& gui
 		);
 	};
 

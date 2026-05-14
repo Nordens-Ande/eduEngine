@@ -105,7 +105,7 @@ namespace ecs
 	//https://stackoverflow.com/questions/35875616/c-store-functor-in-class
 	struct ObserverComponent
 	{
-		std::function<void(entt::entity entity, events::Events event)> OnNotify;
+		std::function<void(entt::registry& registry, entt::entity source, entt::entity self, events::Events event)> OnNotify;
 	};
 
 	struct SourceComponent
@@ -125,5 +125,11 @@ namespace ecs
 		bool useMaxRadius = true;
 		glm::vec3 position;
 		float radius;
+	};
+
+	struct WorldGUIComponent
+	{
+		float startHeight = 3.5f;
+		std::vector<std::pair<std::string, float>> elements;
 	};
 }

@@ -109,6 +109,7 @@ private:
     ecs::AnimationSystem animationSystem;
     ecs::TPCameraSystem cameraSystem;
     ecs::AttackSystem attackSystem;
+    ecs::WorldGUISystem worldGUISystem;
     std::vector<ecs::UpdateableSystem*> updateableSystems {
         &cameraSystem,
         &movementSystem,
@@ -116,6 +117,7 @@ private:
         &npcControllerSystem,
         &animationSystem,
         &attackSystem,
+        &worldGUISystem,
     };
     
     ecs::RenderSystem renderSystem;
@@ -130,7 +132,13 @@ private:
         &aabbSystem,
         &aabbGizmoSystem,
         &sphereSystem,
-        &sphereGizmoSystem
+        &sphereGizmoSystem,
+    };
+
+
+    std::vector<ecs::RenderableSystem*> renderableUISystems
+    {
+        &worldGUISystem,
     };
 
     //TransformComponent characterWorldTransform;
