@@ -5,6 +5,8 @@
 #include <string>
 #include <functional>
 #include <utility>
+#include "entt/entt.hpp"
+#include "Components.hpp"
 
 //class events
 //{
@@ -17,6 +19,32 @@ namespace events
 		EVENT_ATTACKED,
 		EVENT_DIED,
 		EVENT_COLLISION
+	};
+
+	class SourceSystem
+	{
+	public:
+		void Notify(
+			entt::registry& registry,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
+			ecs::SourceComponent& source,
+			events::Events event
+		);
+		bool TryNotify(
+			entt::registry& registry,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
+			events::Events event
+		);
+		void AddObserver(
+			ecs::SourceComponent& source,
+			ecs::ObserverComponent* observer
+		);
+		void RemoveObserver(
+			ecs::SourceComponent& source,
+			ecs::ObserverComponent* observer
+		);
 	};
 
 

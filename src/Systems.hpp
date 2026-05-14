@@ -2,6 +2,7 @@
 
 #include "entt/entt.hpp"
 #include "Components.hpp"
+#include "Events.hpp"
 
 //Abstract classes (try to make something similar to C#s interfaces)
 //class UpdateableSystem
@@ -78,40 +79,6 @@ namespace ecs
 
 
 #pragma region Systems
-
-	class SourceSystem /*: public UpdateableSystemTemplate<SourceSystem, SourceComponent>*/
-	{
-	public:
-		//void OnUpdate(
-		//	entt::registry& registry,
-		//	entt::entity entity,
-		//	SourceComponent&,
-		//	float dt)
-		//{
-
-		//};
-		void Notify(
-			entt::registry& registry,
-			entt::entity sourceEntity,
-			entt::entity selfEntity,
-			SourceComponent& source,
-			events::Events event
-		);
-		bool TryNotify(
-			entt::registry& registry,
-			entt::entity sourceEntity,
-			entt::entity selfEntity,
-			events::Events event
-		);
-		void AddObserver(
-			SourceComponent& source,
-			ObserverComponent* observer
-		);
-		void RemoveObserver(
-			SourceComponent& source,
-			ObserverComponent* observer
-		);
-	};
 
 	class MovementSystem : public UpdateableSystemTemplate<MovementSystem, TransformComponent, LinearVelocityComponent>
 	{
@@ -203,7 +170,7 @@ namespace ecs
 		);
 	};
 
-	class AttackSystem : public SourceSystem, public UpdateableSystemTemplate<AttackSystem, TransformComponent, AttackComponent>
+	class AttackSystem : public events::SourceSystem, public UpdateableSystemTemplate<AttackSystem, TransformComponent, AttackComponent>
 	{
 	public:
 		void OnUpdate(

@@ -25,12 +25,19 @@ namespace ecs
 		return player;
 	}
 
-	entt::entity Factory::CreateNPC(entt::registry& registry, eeng::ForwardRendererPtr renderer, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed, std::vector<glm::vec3> points)
+	entt::entity Factory::CreateNPC(entt::registry& registry, eeng::ForwardRendererPtr renderer, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed)
 	{
 		entt::entity npc = CreateEmpty(registry, position, rotation, scale);
 		AddComponent<MeshComponent>(registry, npc, renderer, mesh);
-		AddComponent<NPCControllerComponent>(registry, npc, speed, 0, points);
 		AddComponent<LinearVelocityComponent>(registry, npc);
+
+		return npc;
+	}
+
+	entt::entity Factory::CreateControllerNPC(entt::registry& registry, eeng::ForwardRendererPtr renderer, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed, std::vector<glm::vec3> points)
+	{
+		entt::entity npc = CreateNPC(registry, renderer, mesh, position, rotation, scale, speed);
+		AddComponent<NPCControllerComponent>(registry, npc, speed, 0, points);
 
 		return npc;
 	}

@@ -116,7 +116,7 @@ bool Game::init(InputManagerPtr input)
         { 10, 0, 10 },
         { 0, 0, 10 }
     };
-    auto entityHorse = ecs::Factory::CreateNPC(*entity_registry, forwardRenderer, horseMesh, { 0, 1, 0 }, 0.0f, { 0.01f, 0.01f, 0.01f }, 4.0f, horsePoints);
+    auto entityHorse = ecs::Factory::CreateControllerNPC(*entity_registry, forwardRenderer, horseMesh, { 0, 1, 0 }, 0.0f, { 0.01f, 0.01f, 0.01f }, 4.0f, horsePoints);
     ecs::SourceComponent source{ };
     attackSystem.AddObserver(source, &entity_registry->get<ecs::ObserverComponent>(entityPlayer));
     entity_registry->emplace<ecs::SourceComponent>(entityHorse, source);

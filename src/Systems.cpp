@@ -202,62 +202,6 @@ namespace ecs
         }
     }
 
-    void SourceSystem::Notify(
-        entt::registry& registry,
-        entt::entity sourceEntity,
-        entt::entity selfEntity,
-        SourceComponent& source,
-        events::Events event)
-    {
-        for (int i = 0; i < source.numberOfObservers; i++)
-        {
-            //std::cout << "Notifying" << source.numberOfObservers << std::endl;
-            source.observers[i]->OnNotify(registry, sourceEntity, selfEntity, event);
-        }
-    };
-    bool SourceSystem::TryNotify(
-        entt::registry& registry,
-        entt::entity sourceEntity,
-        entt::entity selfEntity,
-        events::Events event)
-    {
-        if (auto* source = registry.try_get<SourceComponent>(sourceEntity))
-        {
-            this->Notify(registry, sourceEntity, selfEntity, *source, event);
-            return true;
-        }
-        return false;
-    };
-    void SourceSystem::AddObserver(
-        SourceComponent& source,
-        ObserverComponent* observer)
-    {
-        source.observers[source.numberOfObservers] = observer;
-        source.numberOfObservers++;
-    }
-    void SourceSystem::RemoveObserver(
-        SourceComponent& source,
-        ObserverComponent* observer)
-    {
-        int index = -1;
-        for (int i = 0; i < source.numberOfObservers; ++i)
-        {
-            if (source.observers[i] != observer)
-                continue;
-            index = i;
-            break;
-        }
-
-        if (index == -1)
-            return;
-
-        for (int i = index; i < source.numberOfObservers - 1; ++i)
-        {
-            source.observers[i] = source.observers[i + 1];
-        }
-        source.numberOfObservers--;
-    }
-
     void AABBColliderSystem::OnRender(
         entt::registry& registry,
         entt::entity entity,
