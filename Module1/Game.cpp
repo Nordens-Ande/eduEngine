@@ -87,6 +87,8 @@ bool Game::init(InputManagerPtr input)
         { 0.01f, 0.01f, 0.01f });
 
     //entity component & systems stuff
+    //collisionSystem.BuildEventQueue(*entity_registry);
+
 
     //PLAYER ENTITY
     auto entityPlayer = ecs::Factory::CreatePlayer(*entity_registry, forwardRenderer, input, characterMesh, { 0, 1, 0 }, 0.0f, { 0.04f, 0.04f, 0.04f }, 5.0f);
@@ -106,8 +108,9 @@ bool Game::init(InputManagerPtr input)
             }
         };
     entity_registry->emplace<ecs::ObserverComponent>(entityPlayer, observer);
-    entity_registry->emplace<ecs::AABBColliderComponent>(entityPlayer, ecs::AABBColliderComponent{});
-    entity_registry->emplace<ecs::SphereColliderComponent>(entityPlayer, ecs::SphereColliderComponent{});
+    entity_registry->emplace<ecs::AABBComponent>(entityPlayer, ecs::AABBComponent{});
+    entity_registry->emplace<ecs::SphereComponent>(entityPlayer, ecs::SphereComponent{});
+    entity_registry->emplace<ecs::ColliderComponent>(entityPlayer, ecs::ColliderComponent{});
 
     //NPC (HORSE) ENTITY
     std::vector<glm::vec3> horsePoints {
@@ -124,7 +127,15 @@ bool Game::init(InputManagerPtr input)
     entt::entity entity = entity_registry->view<ecs::CameraComponent>().front();
     camera = &entity_registry->get<ecs::CameraComponent>(entity);
 
-
+    //empty colliders (testing)
+    for (int i = 0; i < 10; i++)
+    {
+        auto empty = ecs::Factory::CreateEmpty(*entity_registry, { 5 + i*5, 1, i * 2 }, 0.0f, { 1.0f, 1.0f, 1.0f });
+        entity_registry->emplace<ecs::GizmoComponent>(empty, ecs::GizmoComponent{ shapeRenderer });
+        //entity_registry->emplace<ecs::AABBComponent>(empty, ecs::AABBComponent{});
+        entity_registry->emplace<ecs::SphereComponent>(empty, ecs::SphereComponent{ false, false, { 5 + i * 5, 1, i * 2 }, 2.0f});
+        entity_registry->emplace<ecs::ColliderComponent>(empty, ecs::ColliderComponent{ });
+    }
 
     return true;
 }
@@ -141,6 +152,7 @@ void Game::update(
     {
         system->Update(*entity_registry, deltaTime);
     }
+    //collisionSystem.OnUpdate(*entity_registry, entt::null, ecs::ColliderComponent{}, )
 
     pointlight.pos = glm::vec3(
         glm_aux::R(time * 0.1f, { 0.0f, 1.0f, 0.0f }) *
@@ -225,6 +237,11 @@ void Game::render(
         system->Render(*entity_registry);
     }
     //renderSystem.Update(*entity_registry, 0.0f);
+
+    shapeRenderer->push_states(glm_aux::TS(collisionSystem.root->collisionRepresentation->position, glm::vec3(1.0f, 1.0f, 1.0f)));
+    shapeRenderer->push_sphere_wireframe(collisionSystem.root->collisionRepresentation->radius, collisionSystem.root->collisionRepresentation->radius);
+    shapeRenderer->pop_states<glm::mat4>();
+
 
     // Character, instance 2 (left) - two-clip full-body blend
     // Explanation: Both 'idle' and 'walk' clips are applied to the entire skeleton with a blend factor.

@@ -6,7 +6,6 @@
 #include <functional>
 #include <utility>
 #include "entt/entt.hpp"
-#include "Components.hpp"
 
 //class events
 //{
@@ -21,47 +20,28 @@ namespace events
 		EVENT_COLLISION
 	};
 
-	class SourceSystem
+	struct CollisionEvent
 	{
-	public:
-		void Notify(
-			entt::registry& registry,
-			entt::entity sourceEntity,
-			entt::entity selfEntity,
-			ecs::SourceComponent& source,
-			events::Events event
-		);
-		bool TryNotify(
-			entt::registry& registry,
-			entt::entity sourceEntity,
-			entt::entity selfEntity,
-			events::Events event
-		);
-		void AddObserver(
-			ecs::SourceComponent& source,
-			ecs::ObserverComponent* observer
-		);
-		void RemoveObserver(
-			ecs::SourceComponent& source,
-			ecs::ObserverComponent* observer
-		);
+		entt::registry* registry;
+		entt::entity thisEntity;
+		entt::entity otherEntity;
 	};
 
-
-	using Listener = std::function<void(std::string)>;
+	using Listener = std::function<void(const CollisionEvent&)>;
 	class EventQueue
 	{
 	private:
 		std::array<std::pair<std::uint8_t, Listener>, 256> listeners;
-		std::array<std::string, 256> queuedEvents;
-		std::uint8_t numberOfEventsInQueue;
+		std::array<CollisionEvent, 256> queuedEvents;
 
 	public:
+		std::uint8_t numberOfEventsInQueue;
+
 		EventQueue();
 		std::uint8_t RegisterListener(Listener listener);
 		void DeregisterListener(std::uint8_t identifier);
 
-		void EnqueueEvent(std::string event);
+		void EnqueueEvent(const CollisionEvent& event);
 		void BroadcastAllEvents();
 	};
 }

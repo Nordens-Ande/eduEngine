@@ -80,6 +80,32 @@ namespace ecs
 
 #pragma region Systems
 
+	class SourceSystem
+	{
+	public:
+		void Notify(
+			entt::registry& registry,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
+			SourceComponent& source,
+			events::Events event
+		);
+		bool TryNotify(
+			entt::registry& registry,
+			entt::entity sourceEntity,
+			entt::entity selfEntity,
+			events::Events event
+		);
+		void AddObserver(
+			SourceComponent& source,
+			ObserverComponent* observer
+		);
+		void RemoveObserver(
+			SourceComponent& source,
+			ObserverComponent* observer
+		);
+	};
+
 	class MovementSystem : public UpdateableSystemTemplate<MovementSystem, TransformComponent, LinearVelocityComponent>
 	{
 	public:
@@ -170,7 +196,7 @@ namespace ecs
 		);
 	};
 
-	class AttackSystem : public events::SourceSystem, public UpdateableSystemTemplate<AttackSystem, TransformComponent, AttackComponent>
+	class AttackSystem : public SourceSystem, public UpdateableSystemTemplate<AttackSystem, TransformComponent, AttackComponent>
 	{
 	public:
 		void OnUpdate(
@@ -182,7 +208,7 @@ namespace ecs
 		);
 	};
 
-	class AABBColliderSystem : public RenderableSystemTemplate<AABBColliderSystem, TransformComponent, MeshComponent, AABBColliderComponent>
+	class AABBColliderSystem : public RenderableSystemTemplate<AABBColliderSystem, TransformComponent, MeshComponent, AABBComponent>
 	{
 	public:
 		void OnRender(
@@ -190,41 +216,41 @@ namespace ecs
 			entt::entity entity,
 			TransformComponent& transform,
 			MeshComponent& mesh,
-			AABBColliderComponent& aabb
+			AABBComponent& aabb
 		);
 	};
 
-	class AABBGizmoSystem : public RenderableSystemTemplate<AABBGizmoSystem, TransformComponent, AABBColliderComponent, GizmoComponent>
+	class AABBGizmoSystem : public RenderableSystemTemplate<AABBGizmoSystem, TransformComponent, AABBComponent, GizmoComponent>
 	{
 	public:
 		void OnRender(
 			entt::registry& registry,
 			entt::entity entity,
 			TransformComponent& transform,
-			AABBColliderComponent& aabb,
+			AABBComponent& aabb,
 			GizmoComponent& gizmo
 		);
 	};
 
-	class SphereColliderSystem : public RenderableSystemTemplate<SphereColliderSystem, TransformComponent, SphereColliderComponent>
+	class SphereColliderSystem : public RenderableSystemTemplate<SphereColliderSystem, TransformComponent, SphereComponent>
 	{
 	public:
 		void OnRender(
 			entt::registry& registry,
 			entt::entity entity,
 			TransformComponent& transform,
-			SphereColliderComponent& sphere
+			SphereComponent& sphere
 		);
 	};
 
-	class SphereGizmoSystem : public RenderableSystemTemplate<SphereGizmoSystem, TransformComponent, SphereColliderComponent, GizmoComponent>
+	class SphereGizmoSystem : public RenderableSystemTemplate<SphereGizmoSystem, TransformComponent, SphereComponent, GizmoComponent>
 	{
 	public:
 		void OnRender(
 			entt::registry& registry,
 			entt::entity entity,
 			TransformComponent& transform,
-			SphereColliderComponent& sphere,
+			SphereComponent& sphere,
 			GizmoComponent& gizmo
 		);
 	};
@@ -260,6 +286,43 @@ namespace ecs
 	//		float dt
 	//	);
 	//};
+
+	class CollisionSystem : public UpdateableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent> /*, public RenderableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent>*/
+	{
+	private:
+		collision::BVH bvh;
+
+		events::EventQueue eventQueue;
+
+		bool SphereSphereTest(
+			SphereComponent sphereA,
+			SphereComponent sphereB
+		);
+		bool AABBAABBTest(
+			AABBComponent aabbA,
+			AABBComponent aabbB
+		);
+
+	public:
+		collision::BVH::SphereNode* root;
+
+		void BuildEventQueue(
+			entt::registry& registry
+		);
+		void BuildBVH(
+			entt::registry& registry,
+			float maxDistanceBetweenLeaves
+		);
+		void Update(entt::registry& registry, float dt) override;
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			ColliderComponent& collider,
+			SphereComponent& sphere,
+			float dt
+		);
+		//void Render(entt::registry& registry) override;
+	};
 
 #pragma endregion
 

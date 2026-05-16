@@ -5,6 +5,7 @@
 
 namespace ecs
 {
+
     void MovementSystem::OnUpdate(
         entt::registry& registry,
         entt::entity entity, 
@@ -202,21 +203,78 @@ namespace ecs
         }
     }
 
+    void SourceSystem::Notify(
+        entt::registry& registry,
+        entt::entity sourceEntity,
+        entt::entity selfEntity,
+        ecs::SourceComponent& source,
+        events::Events event)
+    {
+        for (int i = 0; i < source.numberOfObservers; i++)
+        {
+            //std::cout << "Notifying" << source.numberOfObservers << std::endl;
+            source.observers[i]->OnNotify(registry, sourceEntity, selfEntity, event);
+        }
+    };
+    bool SourceSystem::TryNotify(
+        entt::registry& registry,
+        entt::entity sourceEntity,
+        entt::entity selfEntity,
+        events::Events event)
+    {
+        if (auto* source = registry.try_get<ecs::SourceComponent>(sourceEntity))
+        {
+            this->Notify(registry, sourceEntity, selfEntity, *source, event);
+            return true;
+        }
+        return false;
+    };
+    void SourceSystem::AddObserver(
+        ecs::SourceComponent& source,
+        ecs::ObserverComponent* observer)
+    {
+        source.observers[source.numberOfObservers] = observer;
+        source.numberOfObservers++;
+    }
+    void SourceSystem::RemoveObserver(
+        ecs::SourceComponent& source,
+        ecs::ObserverComponent* observer)
+    {
+        int index = -1;
+        for (int i = 0; i < source.numberOfObservers; ++i)
+        {
+            if (source.observers[i] != observer)
+                continue;
+            index = i;
+            break;
+        }
+
+        if (index == -1)
+            return;
+
+        for (int i = index; i < source.numberOfObservers - 1; ++i)
+        {
+            source.observers[i] = source.observers[i + 1];
+        }
+        source.numberOfObservers--;
+    }
+
     void AABBColliderSystem::OnRender(
         entt::registry& registry,
         entt::entity entity,
         TransformComponent& transform,
         MeshComponent& mesh,
-        AABBColliderComponent& aabb)
+        AABBComponent& aabb)
     {
-        aabb.collider = mesh.mesh->m_model_aabb.post_transform(transform.getTransform());
+        if (aabb.reSizeToMesh)
+            aabb.collider = mesh.mesh->m_model_aabb.post_transform(transform.getTransform());
     }
 
     void AABBGizmoSystem::OnRender(
         entt::registry& registry,
         entt::entity entity,
         TransformComponent& transform,
-        AABBColliderComponent& aabb,
+        AABBComponent& aabb,
         GizmoComponent& gizmo)
     {
         if (gizmo.isEnabled)
@@ -227,13 +285,13 @@ namespace ecs
         entt::registry& registry,
         entt::entity entity,
         TransformComponent& transform,
-        SphereColliderComponent& sphere)
+        SphereComponent& sphere)
     {
         if (!sphere.useAABB)
         {
             sphere.position = transform.position;
         }
-        else if (auto* aabb = registry.try_get<AABBColliderComponent>(entity))
+        else if (auto* aabb = registry.try_get<AABBComponent>(entity))
         {
             glm::vec4 sphereFromAABB = aabb->collider.getBoundingSphere();
             sphere.position = sphereFromAABB;
@@ -253,7 +311,7 @@ namespace ecs
         entt::registry& registry,
         entt::entity entity,
         TransformComponent& transform,
-        SphereColliderComponent& sphere,
+        SphereComponent& sphere,
         GizmoComponent& gizmo)
     {
         if (gizmo.isEnabled)
@@ -322,4 +380,120 @@ namespace ecs
             }
         }
     }
+
+    bool CollisionSystem::SphereSphereTest(SphereComponent a, SphereComponent b)
+    {
+        glm::vec3 centerToCenter = a.position - b.position;
+        float distance = glm::dot(centerToCenter, centerToCenter);
+
+        float radiusSum = a.radius + b.radius;
+        return distance <= radiusSum*radiusSum;
+    }
+    bool CollisionSystem::AABBAABBTest(AABBComponent a, AABBComponent b)
+    {
+        glm::vec3 aMax = a.collider.max;
+        glm::vec3 aMin = a.collider.min;
+        glm::vec3 bMax = b.collider.max;
+        glm::vec3 bMin = b.collider.min;
+
+        if (aMax.x < bMin.x || aMin.x > bMax.x) //x-axis
+            return false;
+
+        if (aMax.y < bMin.y || aMin.y > bMax.y) //y-axis
+            return false;
+
+        if (aMax.z < bMin.z || aMin.z > bMax.z) //z-axis
+            return false;
+
+        return true;
+    }
+
+    void CollisionSystem::BuildBVH(
+        entt::registry& registry,
+        float maxDistanceBetweenLeaves)
+    {
+        auto colliders = registry.view<ColliderComponent, SphereComponent>();
+        
+        std::vector<entt::entity> collidableEntities;
+        for (entt::entity entity : colliders)
+            collidableEntities.push_back(entity);
+        
+        root = bvh.BuildBVHBottomUp(registry, collidableEntities, maxDistanceBetweenLeaves);
+    }
+    void CollisionSystem::BuildEventQueue(
+        entt::registry& registry)
+    {
+        eventQueue = events::EventQueue();
+    }
+    void CollisionSystem::Update(
+        entt::registry& registry,
+        float dt)
+    {
+        //std::cout << "Trying to Update CollisionSystem" << std::endl;
+        BuildBVH(registry, 1000);
+
+        //std::cout << root->collisionRepresentation->radius << std::endl;
+
+        using Base = UpdateableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent>;
+        Base::Update(registry, dt);
+
+        if (eventQueue.numberOfEventsInQueue > 0)
+            std::cout << "EventQueue has: " << eventQueue.numberOfEventsInQueue << " events" << std::endl;
+        eventQueue.BroadcastAllEvents();
+    }
+    void CollisionSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        ColliderComponent& collider,
+        SphereComponent& sphere,
+        float dt)
+    {
+        //std::cout << "OnUpdate for collision?" << std::endl;
+
+        //Broad Phase
+        std::vector<entt::entity> collisions = bvh.FindPossibleCollisions(root, &sphere);
+        if (collisions.size() > 1)
+            std::cout << collisions.size() << std::endl;
+
+        //Narrow Phase (only done in 2 steps or more if the entity has more than one colliders, i.e also has an AABB)
+        for (entt::entity other : collisions)
+        {
+            if (entity == other)
+                continue;
+
+            SphereComponent& sphereOther = bvh.registry->get<SphereComponent>(other);
+
+            std::cout << "First iteration of narrow phase" << std::endl;
+            if (!SphereSphereTest(sphere, sphereOther)) //First step (sphere collision check)
+                continue;
+
+
+            AABBComponent* aabb = registry.try_get<AABBComponent>(entity);
+            AABBComponent* aabbOther = bvh.registry->try_get<AABBComponent>(other);
+
+            if (aabb && aabbOther) //Second step (AABB collision check)
+            {
+                if (aabb->collider.intersect(aabbOther->collider))
+                {
+                    if (auto gui = registry.try_get<WorldGUIComponent>(entity))
+                        gui->elements.push_back(std::make_pair("*thump*", 1.0f));
+                    eventQueue.EnqueueEvent(events::CollisionEvent{ &registry, entity, other });
+                }
+                    
+            }
+            else
+            {
+                std::cout << "Sphere Collision!" << std::endl;
+            }
+        }
+    }
+    //void CollisionSystem::Render(
+    //    entt::registry& registry)
+    //{
+
+
+    //    using Base = RenderableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent>;
+    //    Base::Render(registry);
+    //}
+
 }

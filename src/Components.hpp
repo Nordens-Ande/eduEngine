@@ -4,6 +4,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <functional>
 #include "glmcommon.hpp"
 #include "ForwardRenderer.hpp"
 #include "ShapeRenderer.hpp"
@@ -11,6 +12,7 @@
 #include "InputManager.hpp"
 #include "Events.hpp"
 #include "AABB.h"
+#include "BVH.hpp"
 
 //struct Position { glm::vec3 pos; };
 //struct Position { glm::vec3 vel; };
@@ -114,12 +116,18 @@ namespace ecs
 		int numberOfObservers = 0;
 	};
 
-	struct AABBColliderComponent
+	struct ColliderComponent
 	{
+		bool isTrigger = false;
+	};
+
+	struct AABBComponent
+	{
+		bool reSizeToMesh = true;
 		eeng::AABB collider;
 	};
 	
-	struct SphereColliderComponent
+	struct SphereComponent
 	{
 		bool useAABB = true;
 		bool useMaxRadius = true;
@@ -131,5 +139,10 @@ namespace ecs
 	{
 		float startHeight = 3.5f;
 		std::vector<std::pair<std::string, float>> elements;
+	};
+
+	struct BVHComponent
+	{
+		collision::BVH bvh;
 	};
 }

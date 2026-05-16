@@ -1,10 +1,12 @@
 #include "BVH.hpp"
+#include "Components.hpp"
+
 
 namespace collision
 {
     float BVH::DistanceBetweenSpheres(Sphere* leftSphere, Sphere* rightSphere)
     {
-        float centerDistance = (rightSphere->position - leftSphere->position).length();
+        float centerDistance = glm::length(rightSphere->position - leftSphere->position);
         float surfaceDistance = centerDistance - (leftSphere->radius + rightSphere->radius);
         return std::max(0.0f, surfaceDistance);
     }
@@ -12,18 +14,31 @@ namespace collision
     void BVH::FindMinMaxPoints(glm::vec3 leftCenter, glm::vec3 rightCenter, float leftRadius, float rightRadius, glm::vec3& minOut, glm::vec3& maxOut)
     {
         minOut.x = std::min(leftCenter.x - leftRadius, rightCenter.x - rightRadius);
-        minOut.x = std::min(leftCenter.x + leftRadius, rightCenter.x + rightRadius);
+        maxOut.x = std::max(leftCenter.x + leftRadius, rightCenter.x + rightRadius);
 
         minOut.y = std::min(leftCenter.y - leftRadius, rightCenter.y - rightRadius);
-        minOut.y = std::min(leftCenter.y + leftRadius, rightCenter.y + rightRadius);
+        maxOut.y = std::max(leftCenter.y + leftRadius, rightCenter.y + rightRadius);
 
         minOut.z = std::min(leftCenter.z - leftRadius, rightCenter.z - rightRadius);
-        minOut.z = std::min(leftCenter.z + leftRadius, rightCenter.z + rightRadius);
+        maxOut.z = std::max(leftCenter.z + leftRadius, rightCenter.z + rightRadius);
+    }
+
+    bool BVH::SphereSphereTest(Sphere* a, Sphere* b)
+    {
+        glm::vec3 centerToCenter = a->position - b->position;
+        float distance = glm::dot(centerToCenter, centerToCenter);
+
+        float radiusSum = a->radius + b->radius;
+        return distance <= radiusSum * radiusSum;
     }
 
     BVH::SphereNode* BVH::BuildNodeFromSingleSphere(Sphere* sphere)
     {
-        return new SphereNode{ sphere, nullptr, nullptr };
+        return new SphereNode{ entt::null, sphere, nullptr, nullptr };
+    }
+    BVH::SphereNode* BVH::BuildNodeFromSingleSphere(entt::entity entity, Sphere* sphere)
+    {
+        return new SphereNode{ entity, sphere, nullptr, nullptr };
     }
 
     BVH::SphereNode* BVH::BuildNodeFromSpheres(Sphere* leftSphere, Sphere* rightSphere)
@@ -32,9 +47,9 @@ namespace collision
         FindMinMaxPoints(leftSphere->position, rightSphere->position, leftSphere->radius, rightSphere->radius, minPoint, maxPoint);
 
         glm::vec3 midPoint = minPoint + (maxPoint - minPoint) * 0.5f;
-        float radius = (maxPoint - minPoint).length() * 0.5f;
+        float radius = glm::length(maxPoint - minPoint) * 0.5f;
 
-        return new SphereNode{ new Sphere{ false, false, midPoint, radius}, nullptr, nullptr };
+        return new SphereNode{ entt::null, new Sphere{ false, false, midPoint, radius}, nullptr, nullptr };
     }
 
     std::vector<std::pair<BVH::SphereNode*, BVH::SphereNode*>> BVH::FindPairs(std::vector<SphereNode*> openList, float maxDistance)
@@ -75,16 +90,31 @@ namespace collision
         return allPairs;
     }
 
-    BVH::SphereNode* BVH::BuildBVHBottomUp(std::vector<Sphere*> spheres, float maxDistanceBetweenLeaves)
+    BVH::SphereNode* BVH::BuildBVHBottomUp(entt::registry& registry, std::vector<entt::entity> entities, float maxDistanceBetweenLeaves)
     {
-        std::vector<BVH::SphereNode*> openList;
-
-        for (Sphere* sphere : spheres)
+        std::vector<Sphere*> spheres;
+        BVH::registry = &registry;
+        for (entt::entity entity : entities)
         {
-            openList.push_back(BVH::BuildNodeFromSingleSphere(sphere));
+            auto& sphere = BVH::registry->get<ecs::SphereComponent>(entity);
+            spheres.push_back(&sphere);
         }
 
-        while (openList.size() != 1) {
+        std::vector<BVH::SphereNode*> openList;
+
+        //for (Sphere* sphere : spheres)
+        //{
+        //    openList.push_back(BVH::BuildNodeFromSingleSphere(sphere));
+        //}
+        for (int i = 0; i < spheres.size(); i++)
+        {
+            openList.push_back(BVH::BuildNodeFromSingleSphere(entities[i], spheres[i]));
+        }
+
+        if (openList.empty())
+            return nullptr;
+
+        while (openList.size() > 1) {
             auto pairs = FindPairs(
                 openList,
                 maxDistanceBetweenLeaves
@@ -119,23 +149,25 @@ namespace collision
         return openList[0];
     }
 
-    std::vector<BVH::Sphere*> BVH::FindPossibleCollisions(BVH::SphereNode* treeRoot, BVH::Sphere* sphere)
+    std::vector<entt::entity> BVH::FindPossibleCollisions(BVH::SphereNode* treeRoot, BVH::Sphere* sphere)
     {
-        std::vector<Sphere*> possibleCollisions;
+        std::vector<entt::entity> possibleCollisions;
 
         if (!sphere || !treeRoot)
             return possibleCollisions;
 
-        if (!SphereSphereCollide(treeRoot->collisionRepresentation, sphere))
+        if (!SphereSphereTest(treeRoot->collisionRepresentation, sphere))
             return possibleCollisions;
 
         if (!treeRoot->leftChild && !treeRoot->rightChild)
         {
-            possibleCollisions.push_back(treeRoot->collisionRepresentation);
+            possibleCollisions.push_back(treeRoot->entity);
 
             return possibleCollisions;
         }
 
+        //std::cout << "Traversing Tree" << std::endl;
+        
         auto collisions = FindPossibleCollisions(treeRoot->leftChild, sphere);
 
         possibleCollisions.insert(possibleCollisions.end(), collisions.begin(), collisions.end());

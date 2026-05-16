@@ -110,6 +110,7 @@ private:
     ecs::TPCameraSystem cameraSystem;
     ecs::AttackSystem attackSystem;
     ecs::WorldGUISystem worldGUISystem;
+    ecs::CollisionSystem collisionSystem;
     std::vector<ecs::UpdateableSystem*> updateableSystems {
         &cameraSystem,
         &movementSystem,
@@ -118,6 +119,7 @@ private:
         &animationSystem,
         &attackSystem,
         &worldGUISystem,
+        &collisionSystem,
     };
     
     ecs::RenderSystem renderSystem;
