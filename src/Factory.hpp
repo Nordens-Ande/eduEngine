@@ -27,10 +27,54 @@ namespace ecs
 			registry.emplace<Component>(entity, std::forward<Args>(args)...);
 		}
 
-		static entt::entity CreateEmpty(entt::registry& registry, glm::vec3 position, float rotation, glm::vec3 scale);
-		static entt::entity CreatePlayer(entt::registry& registry, eeng::ForwardRendererPtr renderer, InputManagerPtr input, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed);
-		static entt::entity CreateNPC(entt::registry& registry, eeng::ForwardRendererPtr renderer, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed);
-		static entt::entity CreateControllerNPC(entt::registry& registry, eeng::ForwardRendererPtr renderer, std::shared_ptr<eeng::RenderableMesh> mesh, glm::vec3 position, float rotation, glm::vec3 scale, float speed, std::vector<glm::vec3> points);
+		static entt::entity CreateEmpty(
+			entt::registry& registry, 
+			glm::vec3 position, 
+			float rotation, 
+			glm::vec3 scale
+		);
+		static entt::entity CreateHitbox(
+			entt::registry& registry,
+			glm::vec3 position,
+			glm::vec3 size,
+			bool isTrigger
+		);
+		static entt::entity CreateMesh(
+			entt::registry& registry,
+			eeng::ForwardRendererPtr renderer,
+			std::shared_ptr<eeng::RenderableMesh> mesh,
+			glm::vec3 position,
+			float rotation,
+			glm::vec3 scale
+		);
+		static entt::entity CreatePlayer(
+			entt::registry& registry, 
+			eeng::ForwardRendererPtr renderer, 
+			InputManagerPtr input, 
+			std::shared_ptr<eeng::RenderableMesh> mesh, 
+			glm::vec3 position, 
+			float rotation, 
+			glm::vec3 scale, 
+			float speed
+		);
+		static entt::entity CreateNPC(
+			entt::registry& registry, 
+			eeng::ForwardRendererPtr renderer, 
+			std::shared_ptr<eeng::RenderableMesh> mesh, 
+			glm::vec3 position, 
+			float rotation, 
+			glm::vec3 scale, 
+			float speed
+		);
+		static entt::entity CreateControllerNPC(
+			entt::registry& registry, 
+			eeng::ForwardRendererPtr renderer, 
+			std::shared_ptr<eeng::RenderableMesh> mesh, 
+			glm::vec3 position, 
+			float rotation, 
+			glm::vec3 scale, 
+			float speed, 
+			std::vector<glm::vec3> points);
 	};
 }
 

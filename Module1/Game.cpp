@@ -87,7 +87,7 @@ bool Game::init(InputManagerPtr input)
         { 0.01f, 0.01f, 0.01f });
 
     //entity component & systems stuff
-    //collisionSystem.BuildEventQueue(*entity_registry);
+    collisionSystem.BuildEventQueue(*entity_registry);
 
 
     //PLAYER ENTITY
@@ -108,9 +108,8 @@ bool Game::init(InputManagerPtr input)
             }
         };
     entity_registry->emplace<ecs::ObserverComponent>(entityPlayer, observer);
-    entity_registry->emplace<ecs::AABBComponent>(entityPlayer, ecs::AABBComponent{});
-    entity_registry->emplace<ecs::SphereComponent>(entityPlayer, ecs::SphereComponent{});
-    entity_registry->emplace<ecs::ColliderComponent>(entityPlayer, ecs::ColliderComponent{});
+    entity_registry->emplace<ecs::FoodComponent>(entityPlayer, ecs::FoodComponent{ false });
+
 
     //NPC (HORSE) ENTITY
     std::vector<glm::vec3> horsePoints {
@@ -127,6 +126,7 @@ bool Game::init(InputManagerPtr input)
     entt::entity entity = entity_registry->view<ecs::CameraComponent>().front();
     camera = &entity_registry->get<ecs::CameraComponent>(entity);
 
+
     //empty colliders (testing)
     for (int i = 0; i < 10; i++)
     {
@@ -136,6 +136,91 @@ bool Game::init(InputManagerPtr input)
         entity_registry->emplace<ecs::SphereComponent>(empty, ecs::SphereComponent{ false, false, { 5 + i * 5, 1, i * 2 }, 2.0f});
         entity_registry->emplace<ecs::ColliderComponent>(empty, ecs::ColliderComponent{ });
     }
+
+
+    //CollisionSystem events listeners:
+    collisionSystem.eventQueue.RegisterListener([](events::CollisionEvent event)
+        {
+            if (event.registry->get<ecs::ColliderComponent>(event.thisEntity).isTrigger)
+                return;
+
+            ecs::TransformComponent& transform = event.registry->get<ecs::TransformComponent>(event.thisEntity);
+            glm::vec3 offset = event.normal * event.penetration * 0.5f;
+            offset.y = 0;
+            transform.position += offset;
+        }
+    );
+    collisionSystem.eventQueue.RegisterListener([](events::CollisionEvent event)
+        {
+            if (!event.registry->get<ecs::ColliderComponent>(event.thisEntity).isTrigger)
+                return;
+
+            if (auto trigger = event.registry->try_get<ecs::TriggerComponent>(event.thisEntity))
+            {
+                //std::cout << "Proccesing trigger event" << std::endl;
+
+                trigger->OnTrigger(event.registry, event.thisEntity, event.otherEntity);
+            }
+        }
+    );
+
+
+    //Trigger places:
+    entt::entity foodArea = ecs::Factory::CreateHitbox(*entity_registry, glm::vec3(0, 0, 10), glm::vec3(3, 3, 3), true);
+    entity_registry->emplace<ecs::GizmoComponent>(foodArea, ecs::GizmoComponent{ shapeRenderer });
+    ecs::TriggerComponent foodAreaTrigger{};
+    foodAreaTrigger.OnTrigger = [](entt::registry* registry, entt::entity triggerEntity, entt::entity enteredEntity)
+        {
+            //std::cout << "Inside Trigger" << std::endl;
+
+            auto triggerFood = registry->try_get<ecs::FoodComponent>(triggerEntity);
+            auto enteredFood = registry->try_get<ecs::FoodComponent>(enteredEntity);
+            auto enteredController = registry->try_get<ecs::PlayerControllerComponent>(enteredEntity);
+            auto enteredAnimation = registry->try_get<ecs::AnimationComponent>(enteredEntity);
+
+            if (!triggerFood || !enteredFood || !enteredController || !enteredController->isInteracting)
+                return;
+
+            bool hasTriggerFood = triggerFood->hasFood;
+            bool hasEnteredFood = enteredFood->hasFood;
+        
+            enteredFood->hasFood = hasTriggerFood;
+            triggerFood->hasFood = hasEnteredFood;
+        };
+    entity_registry->emplace<ecs::TriggerComponent>(foodArea, foodAreaTrigger);
+    entity_registry->emplace<ecs::FoodComponent>(foodArea, ecs::FoodComponent{ true });
+
+    entt::entity feedArea = ecs::Factory::CreateHitbox(*entity_registry, glm::vec3(0, 0, 20), glm::vec3(8, 3, 8), true);
+
+
+    entt::entity hungryHorse = ecs::Factory::CreateHitbox(*entity_registry, glm::vec3(0, 0, 20), glm::vec3(6.0f, 5.0f, 6.0f), true);
+    entity_registry->get<ecs::TransformComponent>(hungryHorse).scale = { 0.01f, 0.01f, 0.01f };
+    entity_registry->emplace<ecs::MeshComponent>(hungryHorse, ecs::MeshComponent{ forwardRenderer, horseMesh });
+    entity_registry->emplace<ecs::LinearVelocityComponent>(hungryHorse, ecs::LinearVelocityComponent{ });
+    entity_registry->emplace<ecs::WorldGUIComponent>(hungryHorse, ecs::WorldGUIComponent{ });
+    //entity_registry->emplace<ecs::GizmoComponent>(hungryHorse, ecs::GizmoComponent{ shapeRenderer });
+    ecs::TriggerComponent feedAreaTrigger{};
+    feedAreaTrigger.OnTrigger = [](entt::registry* registry, entt::entity triggerEntity, entt::entity enteredEntity)
+        {
+            auto triggerVel = registry->try_get<ecs::LinearVelocityComponent>(triggerEntity);
+            auto enteredFood = registry->try_get<ecs::FoodComponent>(enteredEntity);
+
+            if (!enteredFood || !triggerVel)
+                return;
+
+            if (enteredFood->hasFood && enteredFood->feedingTime > enteredFood->durationForFeeding)
+            {
+                triggerVel->velocity = { 0, 0.5f, 2 };
+                if (auto gui = registry->try_get<ecs::WorldGUIComponent>(triggerEntity))
+                {
+                    std::cout << "Adding GUI element" << std::endl;
+                    gui->elements.push_back(std::make_pair("Delicious!", 10.0f));
+                }
+                enteredFood->hasFood = false;
+            }
+        };
+    entity_registry->emplace<ecs::TriggerComponent>(hungryHorse, feedAreaTrigger);
+
 
     return true;
 }
@@ -378,8 +463,11 @@ void Game::renderUI(float time)
     for (entt::entity entity : entity_registry->view<ecs::PlayerControllerComponent>())
     {
         auto& controller = entity_registry->get<ecs::PlayerControllerComponent>(entity);
+        auto& food = entity_registry->get<ecs::FoodComponent>(entity);
 
         ImGui::SliderFloat("Player speed: ", &controller.speed, 0.0f, 100.0f);
+        ImGui::Checkbox("Is interacting: ", &controller.isInteracting);
+        ImGui::Checkbox("Food: ", &food.hasFood);
     }
 
     //animationComponent:

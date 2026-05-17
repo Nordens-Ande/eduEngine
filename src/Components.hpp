@@ -47,6 +47,7 @@ namespace ecs
 	{
 		float speed;
 		InputManagerPtr inputManager;
+		bool isInteracting = false;
 	};
 
 	struct NPCControllerComponent
@@ -126,7 +127,7 @@ namespace ecs
 		bool reSizeToMesh = true;
 		eeng::AABB collider;
 	};
-	
+
 	struct SphereComponent
 	{
 		bool useAABB = true;
@@ -141,8 +142,16 @@ namespace ecs
 		std::vector<std::pair<std::string, float>> elements;
 	};
 
-	struct BVHComponent
+	struct FoodComponent
 	{
-		collision::BVH bvh;
+		bool hasFood;
+		float durationForFeeding = 5;
+		float feedingTime = 0;
+	};
+
+	struct TriggerComponent
+	{
+		std::function<void(entt::registry* registry, entt::entity triggerEntity, entt::entity enteredEntity)> OnTrigger;
+		//bool isActive = false;
 	};
 }

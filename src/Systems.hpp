@@ -292,18 +292,21 @@ namespace ecs
 	private:
 		collision::BVH bvh;
 
-		events::EventQueue eventQueue;
-
 		bool SphereSphereTest(
 			SphereComponent sphereA,
-			SphereComponent sphereB
+			SphereComponent sphereB,
+			glm::vec3& normal,
+			float& penetration
 		);
 		bool AABBAABBTest(
 			AABBComponent aabbA,
-			AABBComponent aabbB
+			AABBComponent aabbB,
+			glm::vec3& normal, 
+			float& penetration
 		);
 
 	public:
+		events::EventQueue eventQueue;
 		collision::BVH::SphereNode* root;
 
 		void BuildEventQueue(
@@ -322,6 +325,31 @@ namespace ecs
 			float dt
 		);
 		//void Render(entt::registry& registry) override;
+	};
+
+	class TriggerSystem : public UpdateableSystemTemplate<TriggerSystem, ColliderComponent, TriggerComponent>
+	{
+	public:
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			ColliderComponent& collider,
+			TriggerComponent& trigger,
+			float dt
+		);
+	};
+
+	class FeedSystem : public SourceSystem, public UpdateableSystemTemplate<FeedSystem, PlayerControllerComponent, AnimationComponent, FoodComponent>
+	{
+	public:
+		void OnUpdate(
+			entt::registry& registry,
+			entt::entity entity,
+			PlayerControllerComponent& controller,
+			AnimationComponent& animation,
+			FoodComponent& food,
+			float dt
+		);
 	};
 
 #pragma endregion

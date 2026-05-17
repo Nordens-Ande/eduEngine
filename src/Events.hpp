@@ -6,6 +6,7 @@
 #include <functional>
 #include <utility>
 #include "entt/entt.hpp"
+#include "glmcommon.hpp"
 
 //class events
 //{
@@ -17,7 +18,8 @@ namespace events
 	{
 		EVENT_ATTACKED,
 		EVENT_DIED,
-		EVENT_COLLISION
+		EVENT_COLLISION,
+		EVENT_FINISHED_ANIMATION
 	};
 
 	struct CollisionEvent
@@ -25,6 +27,8 @@ namespace events
 		entt::registry* registry;
 		entt::entity thisEntity;
 		entt::entity otherEntity;
+		glm::vec3 normal;
+		float penetration;
 	};
 
 	using Listener = std::function<void(const CollisionEvent&)>;

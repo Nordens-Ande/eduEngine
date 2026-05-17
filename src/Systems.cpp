@@ -30,6 +30,8 @@ namespace ecs
         if (controller.inputManager->IsKeyPressed(eeng::InputManager::Key::D)) moveDir.x -= 1.0f;
 
         vel.velocity = moveDir * controller.speed;
+        
+        controller.isInteracting = controller.inputManager->IsKeyPressed(eeng::InputManager::Key::E);
     }
 
     void RenderSystem::OnRender(
@@ -370,7 +372,7 @@ namespace ecs
                     // ImGuiWindowFlags_NoBackground |
                     ImGuiWindowFlags_AlwaysAutoResize;
 
-                std::string name = "text_box##" + i;
+                std::string name = "text_box" + std::to_string(i);
                 if (ImGui::Begin(name.c_str(), nullptr, flags))
                 {
                     ImGui::Text("%s", pair.first.c_str());
@@ -381,29 +383,50 @@ namespace ecs
         }
     }
 
-    bool CollisionSystem::SphereSphereTest(SphereComponent a, SphereComponent b)
+    bool CollisionSystem::SphereSphereTest(SphereComponent a, SphereComponent b, glm::vec3& normal, float& penetration)
     {
         glm::vec3 centerToCenter = a.position - b.position;
         float distance = glm::dot(centerToCenter, centerToCenter);
 
         float radiusSum = a.radius + b.radius;
+        
+        penetration = radiusSum - glm::length(centerToCenter);
+        normal = glm::normalize(centerToCenter);
+
         return distance <= radiusSum*radiusSum;
     }
-    bool CollisionSystem::AABBAABBTest(AABBComponent a, AABBComponent b)
+    bool CollisionSystem::AABBAABBTest(AABBComponent a, AABBComponent b, glm::vec3& normal, float& penetration)
     {
         glm::vec3 aMax = a.collider.max;
         glm::vec3 aMin = a.collider.min;
         glm::vec3 bMax = b.collider.max;
         glm::vec3 bMin = b.collider.min;
 
-        if (aMax.x < bMin.x || aMin.x > bMax.x) //x-axis
-            return false;
+        if (aMax.x < bMin.x || aMin.x > bMax.x) return false;
+        if (aMax.y < bMin.y || aMin.y > bMax.y) return false;
+        if (aMax.z < bMin.z || aMin.z > bMax.z) return false;
 
-        if (aMax.y < bMin.y || aMin.y > bMax.y) //y-axis
-            return false;
+        float overlapX = std::min(aMax.x, bMax.x) - std::max(aMin.x, bMin.x);
+        float overlapY = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
+        float overlapZ = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
 
-        if (aMax.z < bMin.z || aMin.z > bMax.z) //z-axis
-            return false;
+        glm::vec3 aCenter = (aMin + aMax) * 0.5f;
+        glm::vec3 bCenter = (bMin + bMax) * 0.5f;
+
+        penetration = overlapX;
+        normal = {aCenter.x - bCenter.x, 0.0f, 0.0f };
+
+        if (overlapY < penetration)
+        {
+            penetration = overlapY;
+            normal = {0.0f, aCenter.y - bCenter.y, 0.0f};
+        }
+
+        if (overlapZ < penetration)
+        {
+            penetration = overlapZ;
+            normal = {0.0f, 0.0f, aCenter.z - bCenter.z};
+        }
 
         return true;
     }
@@ -437,8 +460,8 @@ namespace ecs
         using Base = UpdateableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent>;
         Base::Update(registry, dt);
 
-        if (eventQueue.numberOfEventsInQueue > 0)
-            std::cout << "EventQueue has: " << eventQueue.numberOfEventsInQueue << " events" << std::endl;
+        //if (eventQueue.numberOfEventsInQueue > 0)
+        //    std::cout << "EventQueue has: " << std::to_string(eventQueue.numberOfEventsInQueue) << " events" << std::endl;
         eventQueue.BroadcastAllEvents();
     }
     void CollisionSystem::OnUpdate(
@@ -452,8 +475,8 @@ namespace ecs
 
         //Broad Phase
         std::vector<entt::entity> collisions = bvh.FindPossibleCollisions(root, &sphere);
-        if (collisions.size() > 1)
-            std::cout << collisions.size() << std::endl;
+        //if (collisions.size() > 1)
+        //    std::cout << "Current possible collisions: " << collisions.size() << std::endl;
 
         //Narrow Phase (only done in 2 steps or more if the entity has more than one colliders, i.e also has an AABB)
         for (entt::entity other : collisions)
@@ -462,38 +485,91 @@ namespace ecs
                 continue;
 
             SphereComponent& sphereOther = bvh.registry->get<SphereComponent>(other);
+            ColliderComponent* colliderOther = registry.try_get<ColliderComponent>(other);
 
-            std::cout << "First iteration of narrow phase" << std::endl;
-            if (!SphereSphereTest(sphere, sphereOther)) //First step (sphere collision check)
+            glm::vec3 normal;
+            float penetration;
+
+            //std::cout << "First iteration of narrow phase" << std::endl;
+            //First step, where we check:
+            // - Both are colliders
+            // - Other collider is a trigger
+            // - Both are not trigger colliders (if both are, we ignore)
+            // - Do a SphereSphereTest (first part of the narrow-phase)
+            if (!colliderOther || colliderOther->isTrigger || (collider.isTrigger && colliderOther->isTrigger) || !SphereSphereTest(sphere, sphereOther, normal, penetration))
                 continue;
 
 
             AABBComponent* aabb = registry.try_get<AABBComponent>(entity);
             AABBComponent* aabbOther = bvh.registry->try_get<AABBComponent>(other);
 
-            if (aabb && aabbOther) //Second step (AABB collision check)
+            //Second step (AABB collision check, if there are any)
+            if (aabb && aabbOther)
             {
-                if (aabb->collider.intersect(aabbOther->collider))
+                if (AABBAABBTest(*aabb, *aabbOther, normal, penetration))
                 {
+                    //if (collider.isTrigger)
+                    //    std::cout << "Proccesing trigger event" << std::endl;
+
                     if (auto gui = registry.try_get<WorldGUIComponent>(entity))
-                        gui->elements.push_back(std::make_pair("*thump*", 1.0f));
-                    eventQueue.EnqueueEvent(events::CollisionEvent{ &registry, entity, other });
+                        if (!collider.isTrigger)
+                            gui->elements.push_back(std::make_pair("*thump*", 1.0f));
+                    eventQueue.EnqueueEvent(events::CollisionEvent{ &registry, entity, other, normal, penetration });
                 }
-                    
             }
             else
             {
-                std::cout << "Sphere Collision!" << std::endl;
+                if (auto gui = registry.try_get<WorldGUIComponent>(entity))
+                    if (!collider.isTrigger)
+                        gui->elements.push_back(std::make_pair("*circular thump*", 1.0f));
+                eventQueue.EnqueueEvent(events::CollisionEvent{ &registry, entity, other, normal, penetration });
             }
         }
     }
-    //void CollisionSystem::Render(
-    //    entt::registry& registry)
-    //{
 
+    void TriggerSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        ColliderComponent& collider,
+        TriggerComponent& trigger,
+        float dt)
+    {
+        //if (!trigger.isActive)
+        //    return;
 
-    //    using Base = RenderableSystemTemplate<CollisionSystem, ColliderComponent, SphereComponent>;
-    //    Base::Render(registry);
-    //}
+        //if (collider.isTrigger)
+        //    std::cout << "Setting trigger to not active" << std::endl;
+        //
+        //trigger.isActive = false;
+    }
+
+    void FeedSystem::OnUpdate(
+        entt::registry& registry,
+        entt::entity entity,
+        PlayerControllerComponent& controller,
+        AnimationComponent& animation,
+        FoodComponent& food,
+        float dt)
+    {
+        if (controller.isInteracting)
+        {
+            if (food.feedingTime == 0)
+            {
+                animation.time = 0;
+                animation.primaryAnimation = 3;
+                animation.secondaryAnimation = 3;
+            }
+            food.feedingTime += dt;
+        }
+        else
+        {
+            food.feedingTime = 0;
+            animation.primaryAnimation = 1;
+            animation.secondaryAnimation = 2;
+        }
+
+        //if (food.feedingTime > food.durationForFeeding)
+
+    }
 
 }

@@ -35,7 +35,8 @@ namespace events
 		for (int i = 0; i < numberOfEventsInQueue; i++)
 		{
 			for (auto& pair : listeners)
-				pair.second(queuedEvents[i]);
+				if (pair.second)
+					pair.second(queuedEvents[i]);
 		}
 		numberOfEventsInQueue = 0;
 	}
